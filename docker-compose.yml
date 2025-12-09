@@ -1,16 +1,56 @@
 version: '3.8'
 services:
+  # 1. Database
   db:
     image: postgres:15
-    container_name: hospital_db
+    container_name: medcore_db
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password123
-      POSTGRES_DB: hospital_ai
+      POSTGRES_DB: medcore_ai
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+
+  # 2. Node API (The Manager)
+  server:
+    build: ./server
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./server:/app  # <--- This allows live code updates!
+      - /app/node_modules
+    depends_on:
+      - db
+      - ai-service
+    environment:
+      PGHOST: db
+      AI_SERVICE_URL: http://ai-service:8000
+
+  # 3. Python AI (The Brain)
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ai-service:/app # <--- This allows live Python updates!
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # 4. React Client (The Face)
+  client:
+    build: ./client
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app # <--- This allows live React updates!
+      - /app/node_modules
+    depends_on:
+      - server
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Helps file watching on some Linux systems
 
 volumes:
   db_data:

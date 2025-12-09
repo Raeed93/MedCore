@@ -1,0 +1,12 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+# Install dependencies (this takes time the first run)
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Run the app with hot-reload enabled for development
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

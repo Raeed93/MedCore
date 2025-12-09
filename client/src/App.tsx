@@ -12,7 +12,7 @@ function App() {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h1>Hospital AI Assistant</h1>
+      <h1>MedCore</h1>
       <p>Backend Status: <strong>{status}</strong></p>
     </div>
   );
