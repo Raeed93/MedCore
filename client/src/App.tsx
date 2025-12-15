@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PatientManager from './components/patientManager';
 
 function App() {
   const [status, setStatus] = useState<string>('Loading...');
@@ -12,8 +13,7 @@ function App() {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h1>MedCore</h1>
-      <p>Backend Status: <strong>{status}</strong></p>
+      <PatientManager />
     </div>
   );
 }
