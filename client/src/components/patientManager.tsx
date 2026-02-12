@@ -1,102 +1,187 @@
-import { useState, useEffect } from 'react';
-
-// Define what a "Patient" looks like
-interface Patient {
-  id: number;
-  name: string;
-  age: number;
-  condition: string;
-}
+import { useState } from 'react';
+import { Activity, User, Calendar, Clock, FileText, AlertTriangle, HelpCircle } from 'lucide-react';
+import { DiagnosisResults } from './DiagnosisResults';
+import type { DiagnosisResult } from './DiagnosisResults';
 
 export default function PatientManager() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [condition, setCondition] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [result, setResult] = useState<DiagnosisResult | null>(null);
 
-  // 1. Function to fetch data from Backend
-  const fetchPatients = async () => {
-    try {
-      const res = await fetch('http://localhost:3000/patients');
-      const data = await res.json();
-      setPatients(data);
-    } catch (err) {
-      console.error("Error fetching:", err);
-    }
+  // Form State
+  const [formData, setFormData] = useState({
+    patientId: 'P-2024-001',
+    age: '',
+    gender: '',
+    symptoms: '',
+    duration: '',
+    history: ''
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 2. Run this when the page loads
-  useEffect(() => {
-    fetchPatients();
-  }, []);
+  const handleGenerate = async () => {
+    setIsLoading(true);
 
-  // 3. Function to send new data to Backend
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await fetch('http://localhost:3000/patients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, age: Number(age), condition }),
+    // TODO: Connect this to your real Node/Python API later.
+    // For now, we simulate a delay to show the UI state.
+    setTimeout(() => {
+      setResult({
+        primaryDiagnosis: ['Viral Upper Respiratory Infection', 'Early onset Pneumonia'],
+        differentialDiagnosis: ['Influenza A', 'Acute Bronchitis', 'COVID-19'],
+        recommendedTests: ['Chest X-Ray', 'CBC Blood Panel', 'PCR Swab'],
+        urgencyLevel: 'medium',
+        recommendations: [
+          'Prescribe rest and hydration',
+          'Monitor temperature daily',
+          'Return if breathing difficulty worsens'
+        ],
+        notes: 'Patient shows signs of dehydration. Pulse slightly elevated.'
       });
-      // Clear form and reload list
-      setName('');
-      setAge('');
-      setCondition('');
-      fetchPatients(); 
-    } catch (err) {
-      console.error("Error adding:", err);
-    }
+      setIsLoading(false);
+    }, 2000);
   };
+
+  // Common Input Styles
+  const inputClass = "w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 backdrop-blur-sm transition-all";
+  const labelClass = "block text-sm text-white/90 mb-2 font-medium flex items-center gap-2";
 
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1>Doctor's Dashboard</h1>
+    <div className="max-w-4xl mx-auto space-y-8">
       
-      {/* Input Form */}
-      <div style={{ background: '#f0f0f0', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-        <h3>Add New Patient</h3>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <input 
-            placeholder="Name" 
-            value={name} 
-            onChange={e => setName(e.target.value)} 
-            required 
-            style={{ padding: '8px' }}
-          />
-          <input 
-            placeholder="Age" 
-            type="number" 
-            value={age} 
-            onChange={e => setAge(e.target.value)} 
-            required 
-            style={{ padding: '8px' }}
-          />
-          <input 
-            placeholder="Condition/Symptoms" 
-            value={condition} 
-            onChange={e => setCondition(e.target.value)} 
-            required 
-            style={{ padding: '8px' }}
-          />
-          <button type="submit" style={{ padding: '10px', background: 'blue', color: 'white', border: 'none', cursor: 'pointer' }}>
-            Add Patient
+      {/* --- SECTION 1: THE INPUT FORM --- */}
+      <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 shadow-2xl">
+        <h2 className="text-2xl font-light text-white mb-6 border-b border-white/10 pb-4">
+          Patient Information
+        </h2>
+
+        <div className="space-y-6">
+          {/* Row 1: ID, Age, Gender */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className={labelClass}><User className="w-4 h-4" /> Patient ID</label>
+              <input 
+                name="patientId" 
+                value={formData.patientId} 
+                onChange={handleInputChange} 
+                className={inputClass} 
+              />
+            </div>
+            <div>
+              <label className={labelClass}><Calendar className="w-4 h-4" /> Age</label>
+              <input 
+                name="age" 
+                type="number" 
+                placeholder="Years" 
+                value={formData.age} 
+                onChange={handleInputChange} 
+                className={inputClass} 
+              />
+            </div>
+            <div>
+              <label className={labelClass}><User className="w-4 h-4" /> Gender</label>
+              <select 
+                name="gender" 
+                value={formData.gender} 
+                onChange={handleInputChange} 
+                className={`${inputClass} appearance-none`} // appearance-none hides default arrow
+              >
+                <option value="" className="text-black">Select</option>
+                <option value="Male" className="text-black">Male</option>
+                <option value="Female" className="text-black">Female</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Row 2: Symptoms */}
+          <div>
+            <label className={labelClass}><Activity className="w-4 h-4" /> Symptoms & Chief Complaint</label>
+            <textarea 
+              name="symptoms" 
+              rows={3} 
+              placeholder="Describe patient symptoms, vital signs, physical examination findings..." 
+              value={formData.symptoms} 
+              onChange={handleInputChange} 
+              className={inputClass} 
+            />
+          </div>
+
+          {/* Row 3: Duration */}
+          <div>
+            <label className={labelClass}><Clock className="w-4 h-4" /> Duration of Symptoms</label>
+            <input 
+              name="duration" 
+              placeholder="e.g., 3 days, 2 weeks, 1 month" 
+              value={formData.duration} 
+              onChange={handleInputChange} 
+              className={inputClass} 
+            />
+          </div>
+
+          {/* Row 4: History */}
+          <div>
+            <label className={labelClass}><FileText className="w-4 h-4" /> Medical History & Current Medications</label>
+            <textarea 
+              name="history" 
+              rows={2} 
+              placeholder="Relevant medical history, allergies, current medications..." 
+              value={formData.history} 
+              onChange={handleInputChange} 
+              className={inputClass} 
+            />
+          </div>
+
+          {/* Generate Button */}
+          <button 
+            onClick={handleGenerate}
+            disabled={isLoading}
+            className="w-full bg-white text-red-900 font-bold py-4 rounded-lg hover:bg-white/90 transition-all shadow-lg flex items-center justify-center gap-2 mt-4"
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-900"></div>
+                Analyzing Clinical Data...
+              </>
+            ) : (
+              <>
+                <Activity className="w-5 h-5" />
+                Generate AI Diagnosis
+              </>
+            )}
           </button>
-        </form>
+        </div>
       </div>
 
-      {/* List Display */}
-      <h3>Patient List</h3>
-      {patients.length === 0 ? <p>No patients found.</p> : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {patients.map((p) => (
-            <li key={p.id} style={{ borderBottom: '1px solid #ccc', padding: '10px 0' }}>
-              <strong>{p.name}</strong> (Age: {p.age}) <br />
-              <span style={{ color: 'red' }}>Condition: {p.condition}</span>
-            </li>
-          ))}
-        </ul>
+      {/* --- SECTION 2: THE RESULTS AREA --- */}
+      {result ? (
+        // If we have a result, show the fancy component you provided
+        <div className="animate-fadeIn">
+          <DiagnosisResults result={result} onClose={() => setResult(null)} />
+        </div>
+      ) : (
+        // If no result yet, show the "Placeholder" from your screenshot
+        <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center backdrop-blur-sm min-h-[300px] flex flex-col items-center justify-center text-white/30">
+          <Activity className="w-16 h-16 mb-4 opacity-50" />
+          <h3 className="text-xl font-light text-white/70">Fill out the patient information form</h3>
+          <p className="text-sm mt-2">Results will appear here</p>
+        </div>
       )}
+
+      {/* Footer Warning */}
+      <div className="bg-white/5 border border-white/10 rounded-lg p-4 flex items-center justify-center gap-3 backdrop-blur-md">
+        <AlertTriangle className="w-5 h-5 text-yellow-500" />
+        <p className="text-xs text-white/70">
+          This AI system is for clinical decision support only. Always validate with professional medical judgment and additional testing.
+        </p>
+      </div>
+
+      {/* Help Icon (Bottom Right) */}
+      <div className="fixed bottom-6 right-6">
+        <button className="bg-black/40 p-3 rounded-full hover:bg-black/60 transition-colors text-white/50 hover:text-white border border-white/10">
+            <HelpCircle className="w-6 h-6" />
+        </button>
+      </div>
     </div>
   );
 }
