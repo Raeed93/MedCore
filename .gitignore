@@ -1,4 +1,52 @@
-node_modules
-dist
+# Environment Variables (NEVER COMMIT!)
 .env
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# ChromaDB
+chroma_db/
+*.db
+
+# Docker
+.dockerignore
+
+# Uploads
+uploads/
+*.pdf
+*.docx
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+SETUP_GUIDE.md
+
+# Database
+*.sqlite
+*.db

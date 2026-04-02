@@ -1,5 +1,30 @@
-fastapi
-uvicorn
-torch
-transformers
-requests
+# FastAPI & Server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Environment & Configuration
+python-dotenv==1.0.0
+
+# RAG System Components
+langchain==0.1.4
+chromadb==0.4.22
+sentence-transformers==2.3.1
+
+# Document Processing
+PyPDF2==3.0.1
+python-docx==1.1.0
+
+# HuggingFace Integration
+transformers==4.37.2
+huggingface-hub==0.20.3
+
+# HTTP Requests
+requests==2.31.0
+
+# Optional: If you want local model support later
+# torch==2.1.2
+# accelerate==0.26.1
+# bitsandbytes==0.42.0
+
+# lists all the python packages needed for the AI service, including FastAPI for building the API, Uvicorn as the ASGI server, PyTorch and Transformers for handling the AI models, and Requests for making HTTP requests if needed.

@@ -6,7 +6,7 @@ import type { DiagnosisResult } from './DiagnosisResults';
 export default function PatientManager() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<DiagnosisResult | null>(null);
-
+  const [error, setError] = useState<string | null>(null);
   // Form State
   const [formData, setFormData] = useState({
     patientId: 'P-2024-001',
@@ -21,28 +21,61 @@ export default function PatientManager() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleGenerate = async () => {
+    const handleGenerate = async () => {
+    // Validation
+    if (!formData.age || !formData.gender || !formData.symptoms) {
+      setError('Please fill in Age, Gender, and Symptoms at minimum');
+      return;
+    }
+
     setIsLoading(true);
+    setError(null);
 
-    // TODO: Connect this to your real Node/Python API later.
-    // For now, we simulate a delay to show the UI state.
-    setTimeout(() => {
-      setResult({
-        primaryDiagnosis: ['Viral Upper Respiratory Infection', 'Early onset Pneumonia'],
-        differentialDiagnosis: ['Influenza A', 'Acute Bronchitis', 'COVID-19'],
-        recommendedTests: ['Chest X-Ray', 'CBC Blood Panel', 'PCR Swab'],
-        urgencyLevel: 'medium',
-        recommendations: [
-          'Prescribe rest and hydration',
-          'Monitor temperature daily',
-          'Return if breathing difficulty worsens'
-        ],
-        notes: 'Patient shows signs of dehydration. Pulse slightly elevated.'
+    try {
+      // Call the REAL API
+      const response = await fetch('http://localhost:3000/diagnose', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patientId: formData.patientId,
+          age: parseInt(formData.age),
+          gender: formData.gender,
+          symptoms: formData.symptoms,
+          duration: formData.duration,
+          history: formData.history
+        }),
       });
-      setIsLoading(false);
-    }, 2000);
-  };
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate diagnosis');
+      }
+
+      const data = await response.json();
+      
+      // Set the result from API
+      setResult({
+        primaryDiagnosis: data.primaryDiagnosis || [],
+        differentialDiagnosis: data.differentialDiagnosis || [],
+        recommendedTests: data.recommendedTests || [],
+        urgencyLevel: data.urgencyLevel || 'medium',
+        recommendations: data.recommendations || [],
+        notes: data.notes || '',
+        sources: data.sources || []  // NEW: Medical sources used
+      });
+    } catch (err) {
+      console.error('Error generating diagnosis:', err);
+      setError(
+        err instanceof Error 
+          ? err.message 
+          : 'Failed to connect to AI service. Please ensure the server is running.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // Common Input Styles
   const inputClass = "w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 backdrop-blur-sm transition-all";
   const labelClass = "block text-sm text-white/90 mb-2 font-medium flex items-center gap-2";
@@ -185,3 +218,4 @@ export default function PatientManager() {
     </div>
   );
 }
+

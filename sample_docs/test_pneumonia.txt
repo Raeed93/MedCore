@@ -1,0 +1,38 @@
+PNEUMONIA CLINICAL GUIDELINES
+
+PRIMARY SYMPTOMS:
+- Fever above 38°C (100.4°F)
+- Productive cough with sputum
+- Chest pain during breathing
+- Shortness of breath
+- Fatigue and weakness
+
+DIFFERENTIAL DIAGNOSIS:
+- Community-acquired pneumonia (most common)
+- Bronchitis
+- COVID-19
+- Tuberculosis (if chronic)
+- Lung cancer (in elderly smokers)
+
+RECOMMENDED TESTS:
+- Chest X-ray (confirmatory)
+- Complete Blood Count (CBC)
+- C-Reactive Protein (CRP)
+- Sputum culture
+- Oxygen saturation monitoring
+
+URGENCY ASSESSMENT:
+- High: Temperature >39°C, oxygen saturation <92%, respiratory distress
+- Medium: Fever 38-39°C, productive cough, no breathing difficulty
+- Low: Mild symptoms, normal oxygen levels
+
+TREATMENT RECOMMENDATIONS:
+- First-line antibiotics: Amoxicillin 500mg TID for 7 days
+- Alternative: Azithromycin if penicillin allergy
+- Supportive care: Rest, hydration, fever management
+- Follow-up chest X-ray in 6 weeks
+
+ADDITIONAL NOTES:
+Elderly patients and immunocompromised individuals require closer monitoring.
+Hospital admission recommended if respiratory rate >30/min or confusion present.
+EOF

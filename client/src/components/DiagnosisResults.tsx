@@ -7,6 +7,7 @@ export interface DiagnosisResult {
   urgencyLevel: 'low' | 'medium' | 'high' | 'critical';
   recommendations: string[];
   notes: string;
+  sources?: string[];
 }
 
 interface DiagnosisResultsProps {
