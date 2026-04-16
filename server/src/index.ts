@@ -6,13 +6,20 @@ import multer from 'multer';
 import FormData from 'form-data';
 import fs from 'fs';
 import path from 'path';
+import cookieParser from 'cookie-parser';  
+import authRoutes from './routes/auth.routes'; 
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',  // Frontend URL
+  credentials: true,  // (allows cookies)
+}));
 app.use(express.json());
+app.use(cookieParser());  
+app.use('/auth', authRoutes); 
 
 // File upload configuration
 const upload = multer({ dest: 'uploads/' });
@@ -261,7 +268,7 @@ app.get('/diagnosis-history', async (req: Request, res: Response) => {
 // START SERVER
 // ============================================
 
-app.listen(port, () => {
-    console.log(`🚀 Server running on http://localhost:${port}`);
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`🤖 AI Service URL: ${AI_SERVICE_URL}`);
 });

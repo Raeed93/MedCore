@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   # 1. Database
   db:
@@ -17,20 +16,27 @@ services:
   # 2. Node API (The Manager)
   server:
     build: ./server
-
-    command: npm run dev
     ports:
       - "3000:3000"
     volumes:
-      - ./server:/app  # <--- This allows live code updates!
+      - ./server:/app
       - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password123
+      - POSTGRES_DB=medcore_ai
+      - PGHOST=db
+      - AI_SERVICE_URL=http://ai-service:8000
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=raed.hassaan@gmail.com
+      - SMTP_PASS=uffmsawxeqrfxxuf
+      - JWT_SECRET=045217dc87bec2668f019076915db35033414e43c3bf307523c9f5df6da0c2ca
+      - FRONTEND_URL=http://localhost:5173
     depends_on:
       - db
       - ai-service
-    environment:
-      PGHOST: db
-      AI_SERVICE_URL: http://ai-service:8000
-
   # 3. Python AI (The Brain)
   ai-service:
     build: ./ai-service

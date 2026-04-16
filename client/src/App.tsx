@@ -1,44 +1,48 @@
-import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import LandingPage from './components/layout/landingPage';
+import LoginForm from './components/auth/loginForm';
+import VerifyEmail from './components/auth/verfyEmail';
+import ProtectedRoute from './components/auth/protectedRoute';
+import DashboardLayout from './components/layout/dashboardLayout';
+import DashboardHome from './components/layout/dashboardHome';
 import PatientManager from './components/patientManager';
-import LandingPage from './components/LandingPage';
 
 function App() {
-  const [status, setStatus] = useState<string>('Loading...');
-
-  // Simple "Router" state to switch views
-  const [view, setView] = useState<'landing' | 'manager'>('landing');
-
-  useEffect(() => {
-    fetch('http://localhost:3000/')
-      .then((res) => res.text())
-      .then((data) => setStatus(data))
-      .catch(() => setStatus('Error connecting to server'));
-  }, []);
-
   return (
-    // Apply the global medical background class here
-    <div className="medical-bg font-sans antialiased text-white">
-      
-      {view === 'landing' && (
-        <LandingPage onStart={() => setView('manager')} />
-      )}
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/verify" element={<VerifyEmail />} />
 
-      {view === 'manager' && (
-        <div className="min-h-screen p-6">
-            <button 
-                onClick={() => setView('landing')} 
-                className="mb-4 text-white/70 hover:text-white underline"
-            >
-                ← Back to Home
-            </button>
-            
-            {/* We wrap your existing manager in a glass container to match the theme */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 shadow-2xl max-w-4xl mx-auto">
-                <PatientManager />
-            </div>
-        </div>
-      )}
-    </div>
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route index element={<DashboardHome />} />
+              <Route path="diagnose" element={<PatientManager />} />
+              <Route path="history" element={
+                <div className="text-white text-center mt-20">
+                  <h2 className="text-3xl font-bold mb-4">Diagnosis History</h2>
+                  <p className="text-white/70">Coming soon...</p>
+                </div>
+              } />
+              <Route path="profile" element={
+                <div className="text-white text-center mt-20">
+                  <h2 className="text-3xl font-bold mb-4">Profile Settings</h2>
+                  <p className="text-white/70">Coming soon...</p>
+                </div>
+              } />
+            </Route>
+          </Route>
+
+          {/* Catch-all redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
