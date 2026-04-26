@@ -3,59 +3,41 @@ import { Activity, User, Calendar, Clock, FileText, AlertTriangle, HelpCircle } 
 import { DiagnosisResults } from './DiagnosisResults';
 import type { DiagnosisResult } from './DiagnosisResults';
 
+const frosted: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.38)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  border: '1px solid rgba(255,255,255,0.6)',
+};
+
 export default function PatientManager() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<DiagnosisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Form State
-  const [formData, setFormData] = useState({
-    patientId: 'P-2024-001',
-    age: '',
-    gender: '',
-    symptoms: '',
-    duration: '',
-    history: ''
-  });
+  const [formData, setFormData] = useState({ patientId:'P-2024-001', age:'', gender:'', symptoms:'', duration:'', history:'' });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-    const handleGenerate = async () => {
-    // Validation
+  const handleGenerate = async () => {
     if (!formData.age || !formData.gender || !formData.symptoms) {
       setError('Please fill in Age, Gender, and Symptoms at minimum');
       return;
     }
-
     setIsLoading(true);
     setError(null);
-
     try {
-      // Call the REAL API
       const response = await fetch('http://localhost:3000/diagnose', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          patientId: formData.patientId,
-          age: parseInt(formData.age),
-          gender: formData.gender,
-          symptoms: formData.symptoms,
-          duration: formData.duration,
-          history: formData.history
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientId: formData.patientId, age: parseInt(formData.age), gender: formData.gender, symptoms: formData.symptoms, duration: formData.duration, history: formData.history }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to generate diagnosis');
       }
-
       const data = await response.json();
-      
-      // Set the result from API
       setResult({
         primaryDiagnosis: data.primaryDiagnosis || [],
         differentialDiagnosis: data.differentialDiagnosis || [],
@@ -63,159 +45,149 @@ export default function PatientManager() {
         urgencyLevel: data.urgencyLevel || 'medium',
         recommendations: data.recommendations || [],
         notes: data.notes || '',
-        sources: data.sources || []  // NEW: Medical sources used
+        sources: data.sources || [],
       });
     } catch (err) {
-      console.error('Error generating diagnosis:', err);
-      setError(
-        err instanceof Error 
-          ? err.message 
-          : 'Failed to connect to AI service. Please ensure the server is running.'
-      );
+      setError(err instanceof Error ? err.message : 'Failed to connect to AI service. Please ensure the server is running.');
     } finally {
       setIsLoading(false);
     }
   };
-  // Common Input Styles
-  const inputClass = "w-full bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 backdrop-blur-sm transition-all";
-  const labelClass = "block text-sm text-white/90 mb-2 font-medium flex items-center gap-2";
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '11px 14px',
+    background: 'rgba(255,255,255,0.55)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    border: '1px solid rgba(255,255,255,0.7)',
+    borderRadius: 9, fontSize: 14, color: '#2a0a0a',
+    boxSizing: 'border-box' as const,
+    fontFamily: "'DM Sans', sans-serif", outline: 'none',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 6,
+    fontSize: 13, fontWeight: 500, color: '#3a1a1a', marginBottom: 8,
+  };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      
-      {/* --- SECTION 1: THE INPUT FORM --- */}
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 shadow-2xl">
-        <h2 className="text-2xl font-light text-white mb-6 border-b border-white/10 pb-4">
-          Patient Information
-        </h2>
+    <div style={{ fontFamily:"'DM Sans',sans-serif", maxWidth:860, margin:'0 auto' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap');
+        .pm-input:focus { border-color:rgba(127,29,29,0.45) !important; box-shadow:0 0 0 3px rgba(127,29,29,0.08) !important; }
+        .pm-input::placeholder { color:#9a6060; }
+        .pm-btn:hover:not(:disabled) { background:#6b1818 !important; }
+        @keyframes pm-spin { to { transform:rotate(360deg); } }
+        @keyframes pm-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+      `}</style>
 
-        <div className="space-y-6">
-          {/* Row 1: ID, Age, Gender */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className={labelClass}><User className="w-4 h-4" /> Patient ID</label>
-              <input 
-                name="patientId" 
-                value={formData.patientId} 
-                onChange={handleInputChange} 
-                className={inputClass} 
-              />
+      <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+
+        {/* Page header */}
+        <div>
+          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, fontWeight:700, color:'#2a0a0a', marginBottom:4 }}>Patient Diagnosis</h2>
+          <p style={{ fontSize:13, color:'#7a4a4a', fontWeight:300 }}>Fill in patient details to generate an AI-assisted clinical assessment</p>
+        </div>
+
+        {/* Form card */}
+        <div style={{ ...frosted, borderRadius:16, padding:'32px 36px' }}>
+          <div style={{ borderBottom:'1px solid rgba(127,29,29,0.08)', paddingBottom:18, marginBottom:26 }}>
+            <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, color:'#2a0a0a', marginBottom:3 }}>Patient Information</h3>
+            <p style={{ fontSize:12, color:'#8a5050', fontWeight:300 }}>Age, gender and symptoms are required</p>
+          </div>
+
+          {error && (
+            <div style={{ marginBottom:20, padding:'11px 16px', borderRadius:9, background:'rgba(127,29,29,0.06)', border:'1px solid rgba(127,29,29,0.18)', fontSize:13, color:'#7F1D1D', display:'flex', alignItems:'center', gap:8 }}>
+              <AlertTriangle size={14} /> {error}
             </div>
-            <div>
-              <label className={labelClass}><Calendar className="w-4 h-4" /> Age</label>
-              <input 
-                name="age" 
-                type="number" 
-                placeholder="Years" 
-                value={formData.age} 
-                onChange={handleInputChange} 
-                className={inputClass} 
-              />
+          )}
+
+          <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+            {/* Row 1 */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+              <div>
+                <label style={labelStyle}><User size={13} color="#7F1D1D" /> Patient ID</label>
+                <input name="patientId" value={formData.patientId} onChange={handleInputChange} className="pm-input" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}><Calendar size={13} color="#7F1D1D" /> Age</label>
+                <input name="age" type="number" placeholder="Years" value={formData.age} onChange={handleInputChange} className="pm-input" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}><User size={13} color="#7F1D1D" /> Gender</label>
+                <select name="gender" value={formData.gender} onChange={handleInputChange} className="pm-input" style={{ ...inputStyle, appearance:'none' as const }}>
+                  <option value="">Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
             </div>
+
             <div>
-              <label className={labelClass}><User className="w-4 h-4" /> Gender</label>
-              <select 
-                name="gender" 
-                value={formData.gender} 
-                onChange={handleInputChange} 
-                className={`${inputClass} appearance-none`} // appearance-none hides default arrow
-              >
-                <option value="" className="text-black">Select</option>
-                <option value="Male" className="text-black">Male</option>
-                <option value="Female" className="text-black">Female</option>
-              </select>
+              <label style={labelStyle}><Activity size={13} color="#7F1D1D" /> Symptoms & Chief Complaint</label>
+              <textarea name="symptoms" rows={3} placeholder="Describe patient symptoms, vital signs, physical examination findings..."
+                value={formData.symptoms} onChange={handleInputChange} className="pm-input" style={{ ...inputStyle, resize:'vertical' }} />
             </div>
-          </div>
 
-          {/* Row 2: Symptoms */}
-          <div>
-            <label className={labelClass}><Activity className="w-4 h-4" /> Symptoms & Chief Complaint</label>
-            <textarea 
-              name="symptoms" 
-              rows={3} 
-              placeholder="Describe patient symptoms, vital signs, physical examination findings..." 
-              value={formData.symptoms} 
-              onChange={handleInputChange} 
-              className={inputClass} 
-            />
-          </div>
+            <div>
+              <label style={labelStyle}><Clock size={13} color="#7F1D1D" /> Duration of Symptoms</label>
+              <input name="duration" placeholder="e.g., 3 days, 2 weeks, 1 month" value={formData.duration} onChange={handleInputChange} className="pm-input" style={inputStyle} />
+            </div>
 
-          {/* Row 3: Duration */}
-          <div>
-            <label className={labelClass}><Clock className="w-4 h-4" /> Duration of Symptoms</label>
-            <input 
-              name="duration" 
-              placeholder="e.g., 3 days, 2 weeks, 1 month" 
-              value={formData.duration} 
-              onChange={handleInputChange} 
-              className={inputClass} 
-            />
-          </div>
+            <div>
+              <label style={labelStyle}><FileText size={13} color="#7F1D1D" /> Medical History & Current Medications</label>
+              <textarea name="history" rows={2} placeholder="Relevant medical history, allergies, current medications..."
+                value={formData.history} onChange={handleInputChange} className="pm-input" style={{ ...inputStyle, resize:'vertical' }} />
+            </div>
 
-          {/* Row 4: History */}
-          <div>
-            <label className={labelClass}><FileText className="w-4 h-4" /> Medical History & Current Medications</label>
-            <textarea 
-              name="history" 
-              rows={2} 
-              placeholder="Relevant medical history, allergies, current medications..." 
-              value={formData.history} 
-              onChange={handleInputChange} 
-              className={inputClass} 
-            />
+            <button onClick={handleGenerate} disabled={isLoading} className="pm-btn" style={{
+              width:'100%', background:'#7F1D1D', color:'#f5ebe8', border:'none',
+              padding:'13px 0', borderRadius:9, fontSize:14, fontWeight:500,
+              cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.72 : 1,
+              display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+              transition:'background 0.18s', fontFamily:"'DM Sans',sans-serif",
+            }}>
+              {isLoading
+                ? <><div style={{ width:17, height:17, border:'2px solid rgba(250,224,216,0.3)', borderTopColor:'#fae0d8', borderRadius:'50%', animation:'pm-spin 0.8s linear infinite' }} /> Analyzing Clinical Data...</>
+                : <><Activity size={16} /> Generate AI Diagnosis</>
+              }
+            </button>
           </div>
+        </div>
 
-          {/* Generate Button */}
-          <button 
-            onClick={handleGenerate}
-            disabled={isLoading}
-            className="w-full bg-white text-red-900 font-bold py-4 rounded-lg hover:bg-white/90 transition-all shadow-lg flex items-center justify-center gap-2 mt-4"
-          >
-            {isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-900"></div>
-                Analyzing Clinical Data...
-              </>
-            ) : (
-              <>
-                <Activity className="w-5 h-5" />
-                Generate AI Diagnosis
-              </>
-            )}
-          </button>
+        {/* Results */}
+        {result ? (
+          <div style={{ animation:'pm-fade 0.3s ease' }}>
+            <DiagnosisResults result={result} onClose={() => setResult(null)} />
+          </div>
+        ) : (
+          <div style={{ ...frosted, borderRadius:16, padding:'52px 36px', textAlign:'center', minHeight:240, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+            <div style={{ marginBottom:18, opacity:0.15 }}>
+              <svg viewBox="0 0 200 36" fill="none" style={{ width:180 }}>
+                <path d="M0 18 L38 18 L50 5 L58 31 L66 9 L74 18 L200 18" stroke="#7F1D1D" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h3 style={{ fontSize:15, fontWeight:500, color:'#5a3a3a', marginBottom:5 }}>Fill out the patient information form</h3>
+            <p style={{ fontSize:13, color:'#9a6060', fontWeight:300 }}>AI diagnostic results will appear here</p>
+          </div>
+        )}
+
+        {/* Disclaimer */}
+        <div style={{ background:'rgba(127,29,29,0.05)', border:'1px solid rgba(127,29,29,0.1)', borderRadius:10, padding:'13px 18px', display:'flex', alignItems:'center', gap:12 }}>
+          <AlertTriangle size={15} color="#7F1D1D" style={{ flexShrink:0 }} />
+          <p style={{ fontSize:12, color:'#7a4a4a', lineHeight:1.6, margin:0 }}>
+            This AI system is for clinical decision support only. Always validate with professional medical judgment and additional testing.
+          </p>
         </div>
       </div>
 
-      {/* --- SECTION 2: THE RESULTS AREA --- */}
-      {result ? (
-        // If we have a result, show the fancy component you provided
-        <div className="animate-fadeIn">
-          <DiagnosisResults result={result} onClose={() => setResult(null)} />
-        </div>
-      ) : (
-        // If no result yet, show the "Placeholder" from your screenshot
-        <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center backdrop-blur-sm min-h-[300px] flex flex-col items-center justify-center text-white/30">
-          <Activity className="w-16 h-16 mb-4 opacity-50" />
-          <h3 className="text-xl font-light text-white/70">Fill out the patient information form</h3>
-          <p className="text-sm mt-2">Results will appear here</p>
-        </div>
-      )}
-
-      {/* Footer Warning */}
-      <div className="bg-white/5 border border-white/10 rounded-lg p-4 flex items-center justify-center gap-3 backdrop-blur-md">
-        <AlertTriangle className="w-5 h-5 text-yellow-500" />
-        <p className="text-xs text-white/70">
-          This AI system is for clinical decision support only. Always validate with professional medical judgment and additional testing.
-        </p>
-      </div>
-
-      {/* Help Icon (Bottom Right) */}
-      <div className="fixed bottom-6 right-6">
-        <button className="bg-black/40 p-3 rounded-full hover:bg-black/60 transition-colors text-white/50 hover:text-white border border-white/10">
-            <HelpCircle className="w-6 h-6" />
+      {/* Help button */}
+      <div style={{ position:'fixed', bottom:24, right:24 }}>
+        <button style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', border:'1px solid rgba(255,255,255,0.7)', borderRadius:'50%', width:42, height:42, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#7a4a4a' }}>
+          <HelpCircle size={18} />
         </button>
       </div>
     </div>
   );
 }
-

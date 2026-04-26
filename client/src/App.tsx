@@ -7,6 +7,8 @@ import ProtectedRoute from './components/auth/protectedRoute';
 import DashboardLayout from './components/layout/dashboardLayout';
 import DashboardHome from './components/layout/dashboardHome';
 import PatientManager from './components/patientManager';
+import HistoryPage from './components/layout/historyPage';
+import ProfilePage from './components/layout/profilePage';
 
 function App() {
   return (
@@ -23,18 +25,9 @@ function App() {
             <Route path="/dashboard" element={<DashboardLayout />}>
               <Route index element={<DashboardHome />} />
               <Route path="diagnose" element={<PatientManager />} />
-              <Route path="history" element={
-                <div className="text-white text-center mt-20">
-                  <h2 className="text-3xl font-bold mb-4">Diagnosis History</h2>
-                  <p className="text-white/70">Coming soon...</p>
-                </div>
-              } />
-              <Route path="profile" element={
-                <div className="text-white text-center mt-20">
-                  <h2 className="text-3xl font-bold mb-4">Profile Settings</h2>
-                  <p className="text-white/70">Coming soon...</p>
-                </div>
-              } />
+              <Route path="history" element={<HistoryPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+
             </Route>
           </Route>
 
