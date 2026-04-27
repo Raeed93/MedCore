@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router';
 import {
   Brain, FileText, Shield, ArrowRight,
-  TrendingUp, Users, CheckCircle, Zap, Clock, BarChart3
+  CheckCircle, Zap, Clock, BarChart3
 } from 'lucide-react';
 
 const Logo = ({ size = 32 }: { size?: number }) => (

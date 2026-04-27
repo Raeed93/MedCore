@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, ArrowRight } from 'lucide-react';
 
 const Logo = ({ size = 28, color = '#7F1D1D' }: { size?: number; color?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" width={size} height={size}>

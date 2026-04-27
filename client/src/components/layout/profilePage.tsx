@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Building, Award, Calendar, Edit, Save, Shield, Bell, Lock, Loader2 } from 'lucide-react';
+import { User, Mail, MapPin, Building, Award, Calendar, Edit, Save, Shield, Bell, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const frosted: React.CSSProperties = {

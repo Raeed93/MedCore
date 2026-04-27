@@ -31,9 +31,8 @@ CREATE INDEX IF NOT EXISTS idx_diagnosis_created_at ON diagnosis_history(created
 CREATE INDEX IF NOT EXISTS idx_magic_links_token ON magic_links(token);
 CREATE INDEX IF NOT EXISTS idx_magic_links_expires ON magic_links(expires_at);
 -- Sample data
-INSERT INTO patients (name, age, condition) 
-VALUES ('John Doe', 45, 'Flu Symptoms');
-
+INSERT INTO patients (name, email, age, condition) 
+VALUES ('John Doe', 'john.doe@example.com', 45, 'Flu Symptoms');
 ALTER TABLE patients
 ADD COLUMN IF NOT EXISTS specialty VARCHAR(255),
 ADD COLUMN IF NOT EXISTS hospital VARCHAR(255),
