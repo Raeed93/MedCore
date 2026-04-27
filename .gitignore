@@ -51,4 +51,5 @@ SETUP_GUIDE.md
 
 # Database
 *.sqlite
-*.db
+*.dbawscliv2.zip
+aws/
