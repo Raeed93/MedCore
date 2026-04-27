@@ -16,6 +16,7 @@ const Logo = ({ size = 32, color = '#7F1D1D' }: { size?: number; color?: string 
   </svg>
 );
 
+// Visual-only styles — never touch layout
 const frosted: React.CSSProperties = {
   background: 'rgba(255,255,255,0.38)',
   backdropFilter: 'blur(12px)',
@@ -24,14 +25,14 @@ const frosted: React.CSSProperties = {
 };
 
 const marqueeItems = [
-  'AI-Powered Diagnostics','HIPAA Compliant','24/7 Support','Real-time Analysis',
-  'Clinical Decision Support','Evidence-Based Medicine','Advanced Medical AI','Secure Patient Data',
+  'AI-Powered Diagnostics', 'HIPAA Compliant', '24/7 Support', 'Real-time Analysis',
+  'Clinical Decision Support', 'Evidence-Based Medicine', 'Advanced Medical AI', 'Secure Patient Data',
 ];
 const stats = [
   { value: '98.7%', label: 'Accuracy Rate' },
-  { value: '15K+', label: 'Diagnoses Daily' },
-  { value: '5,000+', label: 'Medical Professionals' },
-  { value: '<30s', label: 'Average Response' },
+  { value: '15K+',  label: 'Diagnoses Daily' },
+  { value: '5,000+',label: 'Medical Professionals' },
+  { value: '<30s',  label: 'Average Response' },
 ];
 const features = [
   { icon: Brain,     title: 'RAG-Powered Analysis',   desc: 'Combines your medical documents with advanced AI models for accurate diagnoses.' },
@@ -42,143 +43,188 @@ const features = [
   { icon: BarChart3, title: 'Analytics Dashboard',     desc: 'Track patient outcomes and diagnostic patterns with comprehensive analytics.' },
 ];
 const benefits = [
-  'Reduce diagnostic time by 60%','Minimize human error','Access to latest medical research',
-  'Comprehensive differential diagnosis','Integrated test recommendations','Multi-language support',
+  'Reduce diagnostic time by 60%', 'Minimize human error',
+  'Access to latest medical research', 'Comprehensive differential diagnosis',
+  'Integrated test recommendations', 'Multi-language support',
 ];
 
 export default function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ background: '#f5ebe8', minHeight: '100vh', fontFamily: "'DM Sans', sans-serif", color: '#2a0a0a' }}>
+    <div className="min-h-screen" style={{ background: '#f5ebe8', fontFamily: "'DM Sans', sans-serif", color: '#2a0a0a' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap');
         @keyframes lp-marquee { from { transform: translateX(0); } to { transform: translateX(-33.33%); } }
-        .lp-nav-link:hover { color: #7F1D1D !important; }
-        .lp-primary { background:#7F1D1D; color:#f5ebe8; border:none; border-radius:9px; font-size:14px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'DM Sans',sans-serif; transition:background 0.18s; padding:12px 26px; }
+        .lp-serif { font-family: 'Playfair Display', serif; }
+        .lp-primary { background:#7F1D1D; color:#f5ebe8; border:none; border-radius:9px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'DM Sans',sans-serif; transition:background 0.18s; }
         .lp-primary:hover { background:#6b1818; }
-        .lp-outline { background:transparent; color:#7F1D1D; border:1.5px solid rgba(127,29,29,0.35); border-radius:9px; font-size:14px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background 0.18s; padding:11px 26px; }
+        .lp-outline { background:transparent; color:#7F1D1D; border:1.5px solid rgba(127,29,29,0.35); border-radius:9px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background 0.18s; }
         .lp-outline:hover { background:rgba(127,29,29,0.05); }
-        .lp-feat:hover { transform:translateY(-2px); }
+        .lp-navlink:hover { color:#7F1D1D !important; }
         .lp-feat { transition:transform 0.2s ease; }
+        .lp-feat:hover { transform:translateY(-2px); }
       `}</style>
 
-      {/* NAV */}
-      <nav style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 52px', position:'sticky', top:0, zIndex:50, ...frosted, borderRadius:0, borderLeft:'none', borderRight:'none', borderTop:'none' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <Logo size={30} />
-          <span style={{ fontFamily:"'Playfair Display',serif", fontSize:19, fontWeight:700, color:'#7F1D1D' }}>MedCore AI</span>
+      {/* ── NAV ── */}
+      <nav
+        className="flex items-center justify-between px-6 md:px-12 py-4 sticky top-0 z-50"
+        style={{ ...frosted, borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none' }}
+      >
+        <div className="flex items-center gap-2">
+          <Logo size={28} />
+          <span className="lp-serif text-lg font-bold" style={{ color: '#7F1D1D' }}>Pulse AI</span>
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:32 }}>
-          {['Features','How it works','Security'].map(l => (
-            <span key={l} className="lp-nav-link" style={{ fontSize:14, color:'#6a3a3a', cursor:'pointer', transition:'color 0.15s' }}>{l}</span>
+        {/* Desktop nav links */}
+        <div className="hidden md:flex items-center gap-8">
+          {['Features', 'How it works', 'Security'].map(l => (
+            <span key={l} className="lp-navlink text-sm cursor-pointer transition-colors" style={{ color: '#6a3a3a' }}>{l}</span>
           ))}
-          <button className="lp-primary" style={{ padding:'9px 20px', fontSize:13 }} onClick={() => navigate('/login')}>Sign In <ArrowRight size={14} /></button>
+          <button className="lp-primary text-sm px-4 py-2" onClick={() => navigate('/login')}>
+            Sign In <ArrowRight size={13} />
+          </button>
         </div>
+        {/* Mobile sign in only */}
+        <button className="flex md:hidden lp-primary text-sm px-4 py-2" onClick={() => navigate('/login')}>
+          Sign In
+        </button>
       </nav>
 
-      {/* HERO */}
-      <section style={{ padding:'80px 52px 56px', maxWidth:880, margin:'0 auto', textAlign:'center' }}>
-        <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(127,29,29,0.07)', border:'1px solid rgba(127,29,29,0.14)', borderRadius:100, padding:'6px 16px', marginBottom:28 }}>
-          <div style={{ width:6, height:6, borderRadius:'50%', background:'#7F1D1D' }} />
-          <span style={{ fontSize:11, color:'#7F1D1D', fontWeight:500, letterSpacing:'0.06em' }}>POWERED BY ADVANCED MEDICAL AI</span>
+      {/* ── HERO ── */}
+      <section className="px-6 md:px-12 lg:px-20 pt-16 md:pt-20 pb-10 md:pb-14 max-w-5xl mx-auto text-center">
+        <div
+          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-7"
+          style={{ background: 'rgba(127,29,29,0.07)', border: '1px solid rgba(127,29,29,0.14)' }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#7F1D1D' }} />
+          <span className="text-xs font-medium tracking-widest" style={{ color: '#7F1D1D' }}>POWERED BY ADVANCED MEDICAL AI</span>
         </div>
-        <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:54, fontWeight:700, lineHeight:1.13, color:'#2a0a0a', marginBottom:14 }}>
-          AI-Powered Medical<br /><span style={{ color:'#7F1D1D' }}>Diagnosis System</span>
+
+        <h1 className="lp-serif font-bold leading-tight mb-3" style={{ fontSize: 'clamp(36px, 6vw, 54px)', color: '#2a0a0a' }}>
+          AI-Powered Medical<br />
+          <span style={{ color: '#7F1D1D' }}>Diagnosis System</span>
         </h1>
-        <p style={{ fontSize:17, color:'#6a3a3a', lineHeight:1.72, maxWidth:500, margin:'0 auto 36px', fontWeight:300 }}>
-          Leverage cutting-edge AI and medical knowledge bases to generate evidence-based diagnostic recommendations for your patients.
+
+        <p className="text-base md:text-lg font-light leading-relaxed max-w-lg mx-auto mb-9" style={{ color: '#6a3a3a' }}>
+          Leverage cutting-edge AI and medical knowledge bases to generate evidence-based
+          diagnostic recommendations for your patients.
         </p>
-        <div style={{ display:'flex', gap:12, justifyContent:'center', flexWrap:'wrap' }}>
-          <button className="lp-primary" onClick={() => navigate('/login')}>Get Started <ArrowRight size={15} /></button>
-          <button className="lp-outline">Watch Demo</button>
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+          <button className="lp-primary text-sm md:text-base px-6 md:px-8 py-3" onClick={() => navigate('/login')}>
+            Get Started <ArrowRight size={15} />
+          </button>
+          <button className="lp-outline text-sm md:text-base px-6 md:px-8 py-3">Watch Demo</button>
         </div>
-        <div style={{ margin:'48px auto 0', maxWidth:440, opacity:0.13 }}>
-          <svg viewBox="0 0 440 36" fill="none" style={{ width:'100%' }}>
-            <path d="M0 18 L70 18 L88 3 L100 33 L112 7 L124 18 L440 18" stroke="#7F1D1D" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* ECG motif */}
+        <div className="mt-12 mx-auto max-w-md opacity-10">
+          <svg viewBox="0 0 440 36" fill="none" className="w-full">
+            <path d="M0 18 L70 18 L88 3 L100 33 L112 7 L124 18 L440 18"
+              stroke="#7F1D1D" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
       </section>
 
-      {/* STATS */}
-      <section style={{ padding:'0 52px 60px', maxWidth:880, margin:'0 auto' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14 }}>
+      {/* ── STATS ── */}
+      <section className="px-6 md:px-12 lg:px-20 pb-14 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {stats.map(({ value, label }) => (
-            <div key={label} style={{ ...frosted, borderRadius:14, padding:'22px 18px', textAlign:'center' }}>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:700, color:'#7F1D1D', marginBottom:4 }}>{value}</div>
-              <div style={{ fontSize:12, color:'#8a5050', fontWeight:300 }}>{label}</div>
+            <div key={label} className="rounded-2xl p-5 md:p-6 text-center" style={frosted}>
+              <div className="lp-serif font-bold mb-1" style={{ fontSize: 'clamp(22px,4vw,28px)', color: '#7F1D1D' }}>{value}</div>
+              <div className="text-xs font-light" style={{ color: '#8a5050' }}>{label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* MARQUEE */}
-      <div style={{ background:'rgba(127,29,29,0.05)', borderTop:'1px solid rgba(127,29,29,0.08)', borderBottom:'1px solid rgba(127,29,29,0.08)', padding:'13px 0', overflow:'hidden', whiteSpace:'nowrap' }}>
-        <div style={{ display:'inline-block', animation:'lp-marquee 22s linear infinite' }}>
-          {[...marqueeItems,...marqueeItems,...marqueeItems].map((item,i) => (
-            <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:8, marginRight:48, fontSize:12, color:'#7F1D1D', fontWeight:500, letterSpacing:'0.04em' }}>
-              <span style={{ width:4, height:4, borderRadius:'50%', background:'#7F1D1D', display:'inline-block' }} />{item}
+      {/* ── MARQUEE ── */}
+      <div
+        className="py-3 overflow-hidden whitespace-nowrap"
+        style={{ background: 'rgba(127,29,29,0.05)', borderTop: '1px solid rgba(127,29,29,0.08)', borderBottom: '1px solid rgba(127,29,29,0.08)' }}
+      >
+        <div style={{ display: 'inline-block', animation: 'lp-marquee 22s linear infinite' }}>
+          {[...marqueeItems, ...marqueeItems, ...marqueeItems].map((item, i) => (
+            <span key={i} className="inline-flex items-center gap-2 mr-12 text-xs font-medium tracking-wide" style={{ color: '#7F1D1D' }}>
+              <span className="w-1 h-1 rounded-full inline-block" style={{ background: '#7F1D1D' }} />
+              {item}
             </span>
           ))}
         </div>
       </div>
 
-      {/* FEATURES */}
-      <section style={{ padding:'72px 52px', maxWidth:980, margin:'0 auto' }}>
-        <div style={{ textAlign:'center', marginBottom:44 }}>
-          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:36, fontWeight:700, color:'#2a0a0a', marginBottom:10 }}>Powerful Features</h2>
-          <p style={{ fontSize:14, color:'#7a4a4a', fontWeight:300 }}>Everything you need for accurate, efficient medical diagnostics</p>
+      {/* ── FEATURES ── */}
+      <section className="px-6 md:px-12 lg:px-20 py-16 md:py-20 max-w-6xl mx-auto">
+        <div className="text-center mb-10 md:mb-12">
+          <h2 className="lp-serif font-bold mb-3" style={{ fontSize: 'clamp(26px,4vw,36px)', color: '#2a0a0a' }}>Powerful Features</h2>
+          <p className="text-sm font-light" style={{ color: '#7a4a4a' }}>Everything you need for accurate, efficient medical diagnostics</p>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="lp-feat" style={{ ...frosted, borderRadius:16, padding:'26px 22px' }}>
-              <div style={{ width:38, height:38, borderRadius:10, background:'rgba(127,29,29,0.08)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:14 }}>
-                <Icon size={17} color="#7F1D1D" />
+            <div key={title} className="lp-feat rounded-2xl p-6" style={frosted}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-4" style={{ background: 'rgba(127,29,29,0.08)' }}>
+                <Icon size={16} color="#7F1D1D" />
               </div>
-              <h3 style={{ fontSize:14, fontWeight:600, color:'#2a0a0a', marginBottom:7 }}>{title}</h3>
-              <p style={{ fontSize:13, color:'#7a4a4a', lineHeight:1.65, fontWeight:300 }}>{desc}</p>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: '#2a0a0a' }}>{title}</h3>
+              <p className="text-xs font-light leading-relaxed" style={{ color: '#7a4a4a' }}>{desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* BENEFITS */}
-      <section style={{ padding:'0 52px 72px', maxWidth:980, margin:'0 auto' }}>
-        <div style={{ background:'#7F1D1D', borderRadius:18, padding:'52px 56px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:48, alignItems:'center' }}>
+      {/* ── BENEFITS ── */}
+      <section className="px-6 md:px-12 lg:px-20 pb-16 md:pb-20 max-w-6xl mx-auto">
+        <div
+          className="rounded-2xl p-8 md:p-14 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center"
+          style={{ background: '#7F1D1D' }}
+        >
           <div>
-            <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:700, color:'#fae0d8', marginBottom:12, lineHeight:1.3 }}>Why Medical Professionals Choose Us</h2>
-            <p style={{ fontSize:14, color:'rgba(250,224,216,0.6)', fontWeight:300, lineHeight:1.75 }}>Join thousands of clinicians who trust MedCore AI for faster, more accurate diagnostic support.</p>
+            <h2 className="lp-serif font-bold mb-3 leading-snug" style={{ fontSize: 'clamp(22px,3vw,28px)', color: '#fae0d8' }}>
+              Why Medical Professionals Choose Us
+            </h2>
+            <p className="text-sm font-light leading-relaxed" style={{ color: 'rgba(250,224,216,0.6)' }}>
+              Join thousands of clinicians who trust Pulse AI for faster, more accurate diagnostic support.
+            </p>
           </div>
-          <div style={{ display:'grid', gap:13 }}>
+          <div className="grid gap-3">
             {benefits.map(b => (
-              <div key={b} style={{ display:'flex', alignItems:'center', gap:11 }}>
-                <CheckCircle size={15} color="rgba(250,224,216,0.6)" style={{ flexShrink:0 }} />
-                <span style={{ fontSize:14, color:'#fae0d8' }}>{b}</span>
+              <div key={b} className="flex items-center gap-3">
+                <CheckCircle size={14} color="rgba(250,224,216,0.6)" className="flex-shrink-0" />
+                <span className="text-sm" style={{ color: '#fae0d8' }}>{b}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section style={{ padding:'0 52px 80px', maxWidth:980, margin:'0 auto', textAlign:'center' }}>
-        <div style={{ ...frosted, borderRadius:18, padding:'60px 48px' }}>
-          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:34, fontWeight:700, color:'#2a0a0a', marginBottom:12 }}>Ready to Transform Your Practice?</h2>
-          <p style={{ fontSize:15, color:'#6a3a3a', marginBottom:32, fontWeight:300 }}>Join thousands of medical professionals using AI-powered diagnostics</p>
-          <button className="lp-primary" style={{ fontSize:15, padding:'13px 34px' }} onClick={() => navigate('/login')}>Start Free Trial <ArrowRight size={16} /></button>
-          <p style={{ marginTop:16, fontSize:12, color:'#9a6060' }}>No credit card required · 14-day free trial · Cancel anytime</p>
+      {/* ── CTA ── */}
+      <section className="px-6 md:px-12 lg:px-20 pb-20 max-w-6xl mx-auto text-center">
+        <div className="rounded-2xl p-10 md:p-16" style={frosted}>
+          <h2 className="lp-serif font-bold mb-3" style={{ fontSize: 'clamp(24px,4vw,34px)', color: '#2a0a0a' }}>
+            Ready to Transform Your Practice?
+          </h2>
+          <p className="text-sm md:text-base font-light mb-8" style={{ color: '#6a3a3a' }}>
+            Join thousands of medical professionals using AI-powered diagnostics
+          </p>
+          <button className="lp-primary text-sm md:text-base px-8 md:px-10 py-3 md:py-4" onClick={() => navigate('/login')}>
+            Start Free Trial <ArrowRight size={16} />
+          </button>
+          <p className="mt-4 text-xs" style={{ color: '#9a6060' }}>No credit card required · 14-day free trial · Cancel anytime</p>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer style={{ borderTop:'1px solid rgba(127,29,29,0.1)', padding:'24px 52px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-          <Logo size={20} />
-          <span style={{ fontSize:13, color:'#8a5050' }}>© 2024 MedCore AI. Clinical decision support only.</span>
+      {/* ── FOOTER ── */}
+      <footer
+        className="flex flex-col md:flex-row items-center justify-between gap-4 px-6 md:px-12 py-6"
+        style={{ borderTop: '1px solid rgba(127,29,29,0.1)' }}
+      >
+        <div className="flex items-center gap-2">
+          <Logo size={18} />
+          <span className="text-xs" style={{ color: '#8a5050' }}>© 2024 Pulse AI. Clinical decision support only.</span>
         </div>
-        <div style={{ display:'flex', gap:24 }}>
-          {['HIPAA Compliant','FDA Registered','ISO 27001'].map(t => (
-            <span key={t} style={{ fontSize:12, color:'#9a6060' }}>{t}</span>
+        <div className="flex gap-5">
+          {['HIPAA Compliant', 'FDA Registered', 'ISO 27001'].map(t => (
+            <span key={t} className="text-xs" style={{ color: '#9a6060' }}>{t}</span>
           ))}
         </div>
       </footer>

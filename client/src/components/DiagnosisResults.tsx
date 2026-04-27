@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle, Activity, FileText, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Activity, FileText, X, FlaskConical, ClipboardList } from 'lucide-react';
 
 export interface DiagnosisResult {
   primaryDiagnosis: string[];
@@ -15,119 +15,208 @@ interface DiagnosisResultsProps {
   onClose: () => void;
 }
 
-export function DiagnosisResults({ result, onClose }: DiagnosisResultsProps) {
-  const getUrgencyColor = () => {
-    switch (result.urgencyLevel) {
-      case 'critical':
-        return 'bg-red-500/20 border-red-400 text-white';
-      case 'high':
-        return 'bg-orange-500/20 border-orange-400 text-white';
-      case 'medium':
-        return 'bg-yellow-500/20 border-yellow-400 text-white';
-      case 'low':
-        return 'bg-green-500/20 border-green-400 text-white';
-    }
-  };
+const frosted: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.38)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  border: '1px solid rgba(255,255,255,0.6)',
+};
 
-  const getUrgencyIcon = () => {
-    if (result.urgencyLevel === 'critical' || result.urgencyLevel === 'high') {
-      return <AlertTriangle className="w-5 h-5" />;
-    }
-    return <CheckCircle className="w-5 h-5" />;
-  };
+const urgencyConfig = {
+  critical: {
+    bg: 'rgba(127,29,29,0.1)',
+    border: 'rgba(127,29,29,0.35)',
+    color: '#7F1D1D',
+    label: 'Critical',
+    icon: <AlertTriangle size={16} />,
+  },
+  high: {
+    bg: 'rgba(154,60,10,0.08)',
+    border: 'rgba(154,60,10,0.3)',
+    color: '#9a3c0a',
+    label: 'High',
+    icon: <AlertTriangle size={16} />,
+  },
+  medium: {
+    bg: 'rgba(146,96,10,0.08)',
+    border: 'rgba(146,96,10,0.3)',
+    color: '#92600a',
+    label: 'Medium',
+    icon: <CheckCircle size={16} />,
+  },
+  low: {
+    bg: 'rgba(22,101,52,0.08)',
+    border: 'rgba(22,101,52,0.3)',
+    color: '#166534',
+    label: 'Low',
+    icon: <CheckCircle size={16} />,
+  },
+};
+
+export function DiagnosisResults({ result, onClose }: DiagnosisResultsProps) {
+  const urgency = urgencyConfig[result.urgencyLevel] || urgencyConfig.medium;
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-xl shadow-2xl border border-white/20 p-6">
-      <div className="flex justify-between items-start mb-6">
-        <h2 className="text-xl text-white">AI-Generated Diagnosis</h2>
+    <div
+      className="rounded-2xl p-6 md:p-8 flex flex-col gap-6"
+      style={{ ...frosted, fontFamily: "'DM Sans', sans-serif" }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap');
+        .dr-serif { font-family: 'Playfair Display', serif; }
+      `}</style>
+
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="dr-serif font-bold mb-1" style={{ fontSize: 20, color: '#2a0a0a' }}>
+            AI-Generated Diagnosis
+          </h2>
+          <p className="text-xs font-light" style={{ color: '#8a5050' }}>
+            Review all findings carefully before clinical decision-making
+          </p>
+        </div>
         <button
           onClick={onClose}
-          className="text-white/70 hover:text-white transition-colors"
+          className="p-1.5 rounded-lg transition-colors hover:bg-red-50"
+          style={{ color: '#9a6060', border: '1px solid rgba(127,29,29,0.12)', background: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}
         >
-          <X className="w-5 h-5" />
+          <X size={16} />
         </button>
       </div>
 
-      {/* Urgency Level */}
-      <div className={`flex items-center gap-3 p-4 rounded-lg border-2 mb-6 backdrop-blur-sm ${getUrgencyColor()}`}>
-        {getUrgencyIcon()}
+      {/* Urgency banner */}
+      <div
+        className="flex items-center gap-3 px-4 py-3 rounded-xl"
+        style={{ background: urgency.bg, border: `1px solid ${urgency.border}` }}
+      >
+        <span style={{ color: urgency.color }}>{urgency.icon}</span>
         <div>
-          <p className="text-sm text-white/80">Urgency Level</p>
-          <p className="uppercase tracking-wide">{result.urgencyLevel}</p>
+          <p className="text-xs font-light mb-0.5" style={{ color: urgency.color, opacity: 0.75 }}>Urgency Level</p>
+          <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: urgency.color }}>
+            {urgency.label}
+          </p>
         </div>
       </div>
 
       {/* Primary Diagnosis */}
-      <div className="mb-6">
-        <h3 className="flex items-center gap-2 text-white mb-3">
-          <Activity className="w-5 h-5 text-white" />
-          Primary Diagnosis
+      <div>
+        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#7F1D1D' }}>
+          <Activity size={13} /> Primary Diagnosis
         </h3>
-        <ul className="space-y-2">
-          {result.primaryDiagnosis.map((diagnosis, index) => (
-            <li key={index} className="bg-white/20 backdrop-blur-sm border-l-4 border-white p-3 rounded text-white">
+        <div className="flex flex-col gap-2">
+          {result.primaryDiagnosis.map((diagnosis, i) => (
+            <div
+              key={i}
+              className="px-4 py-3 rounded-xl text-sm font-medium"
+              style={{
+                background: 'rgba(255,255,255,0.55)',
+                border: '1px solid rgba(127,29,29,0.18)',
+                borderLeft: '3px solid #7F1D1D',
+                color: '#2a0a0a',
+                borderRadius: '0 10px 10px 0',
+              }}
+            >
               {diagnosis}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Differential Diagnosis */}
-      <div className="mb-6">
-        <h3 className="flex items-center gap-2 text-white mb-3">
-          <FileText className="w-5 h-5 text-white" />
-          Differential Diagnosis
-        </h3>
-        <ul className="space-y-2">
-          {result.differentialDiagnosis.map((diagnosis, index) => (
-            <li key={index} className="flex items-start gap-2 text-white/90">
-              <span className="text-white mt-1">•</span>
-              <span>{diagnosis}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Recommended Tests */}
-      <div className="mb-6">
-        <h3 className="flex items-center gap-2 text-white mb-3">
-          <Activity className="w-5 h-5 text-white" />
-          Recommended Tests & Scans
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {result.recommendedTests.map((test, index) => (
-            <div key={index} className="flex items-center gap-2 bg-white/15 backdrop-blur-sm p-3 rounded border border-white/20">
-              <CheckCircle className="w-4 h-4 text-white flex-shrink-0" />
-              <span className="text-white">{test}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Recommendations */}
-      <div className="mb-6">
-        <h3 className="text-white mb-3">Clinical Recommendations</h3>
-        <ul className="space-y-2">
-          {result.recommendations.map((recommendation, index) => (
-            <li key={index} className="flex items-start gap-2 text-white/90">
-              <span className="text-white mt-1">→</span>
-              <span>{recommendation}</span>
-            </li>
+      {/* Differential Diagnosis */}
+      <div>
+        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#7F1D1D' }}>
+          <FileText size={13} /> Differential Diagnosis
+        </h3>
+        <div className="flex flex-col gap-2">
+          {result.differentialDiagnosis.map((diagnosis, i) => (
+            <div key={i} className="flex items-start gap-3 text-sm" style={{ color: '#3a1a1a' }}>
+              <div
+                className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0"
+                style={{ background: 'rgba(127,29,29,0.35)' }}
+              />
+              <span className="font-light leading-relaxed">{diagnosis}</span>
+            </div>
           ))}
-        </ul>
+        </div>
+      </div>
+
+      {/* Recommended Tests */}
+      <div>
+        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#7F1D1D' }}>
+          <FlaskConical size={13} /> Recommended Tests & Scans
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {result.recommendedTests.map((test, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm"
+              style={{
+                background: 'rgba(255,255,255,0.5)',
+                border: '1px solid rgba(255,255,255,0.7)',
+                color: '#2a0a0a',
+              }}
+            >
+              <CheckCircle size={13} color="#7F1D1D" className="flex-shrink-0" />
+              <span className="font-light">{test}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Clinical Recommendations */}
+      <div>
+        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#7F1D1D' }}>
+          <ClipboardList size={13} /> Clinical Recommendations
+        </h3>
+        <div className="flex flex-col gap-2">
+          {result.recommendations.map((rec, i) => (
+            <div key={i} className="flex items-start gap-3 text-sm" style={{ color: '#3a1a1a' }}>
+              <span className="font-medium mt-0.5 flex-shrink-0" style={{ color: '#7F1D1D' }}>→</span>
+              <span className="font-light leading-relaxed">{rec}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Additional Notes */}
       {result.notes && (
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
-          <p className="text-sm text-white/90 mb-2">Additional Notes</p>
-          <p className="text-white/80">{result.notes}</p>
+        <div
+          className="px-4 py-4 rounded-xl"
+          style={{ background: 'rgba(127,29,29,0.04)', border: '1px solid rgba(127,29,29,0.1)' }}
+        >
+          <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#7F1D1D' }}>
+            Additional Notes
+          </p>
+          <p className="text-sm font-light leading-relaxed" style={{ color: '#5a3a3a' }}>{result.notes}</p>
         </div>
       )}
 
-      <div className="mt-6 pt-6 border-t border-white/20">
-        <p className="text-xs text-white/60 italic">
-          ⚠️ This is an AI-generated suggestion. Always use clinical judgment and validate with additional examination and testing.
+      {/* Sources */}
+      {result.sources && result.sources.length > 0 && (
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#9a6060' }}>
+            Medical Sources
+          </h3>
+          <div className="flex flex-col gap-1.5">
+            {result.sources.map((source, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs font-light" style={{ color: '#7a4a4a' }}>
+                <span className="mt-0.5 flex-shrink-0" style={{ color: '#9a6060' }}>[{i + 1}]</span>
+                <span className="leading-relaxed">{source}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Footer disclaimer */}
+      <div
+        className="pt-4 flex items-start gap-2"
+        style={{ borderTop: '1px solid rgba(127,29,29,0.08)' }}
+      >
+        <AlertTriangle size={12} color="#9a6060" className="flex-shrink-0 mt-0.5" />
+        <p className="text-xs font-light italic leading-relaxed" style={{ color: '#9a6060' }}>
+          This is an AI-generated suggestion. Always use clinical judgment and validate with additional examination and testing.
         </p>
       </div>
     </div>

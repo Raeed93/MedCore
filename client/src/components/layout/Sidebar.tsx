@@ -1,9 +1,9 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Activity, Home, FileText, User, LogOut } from 'lucide-react';
+import { Activity, Home, FileText, User, LogOut, X } from 'lucide-react';
 
 const Logo = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" width={26} height={26}>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" width={24} height={24}>
     <defs>
       <mask id="sb-ring">
         <rect width="48" height="48" fill="white" />
@@ -17,7 +17,11 @@ const Logo = () => (
   </svg>
 );
 
-export default function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export default function Sidebar({ onClose }: SidebarProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -27,72 +31,90 @@ export default function Sidebar() {
   };
 
   const navItems = [
-    { path: '/dashboard',          icon: Home,     label: 'Home' },
+    { path: '/dashboard',          icon: Home,     label: 'Home'     },
     { path: '/dashboard/diagnose', icon: Activity,  label: 'Diagnose' },
-    { path: '/dashboard/history',  icon: FileText,  label: 'History' },
-    { path: '/dashboard/profile',  icon: User,      label: 'Profile' },
+    { path: '/dashboard/history',  icon: FileText,  label: 'History'  },
+    { path: '/dashboard/profile',  icon: User,      label: 'Profile'  },
   ];
 
   return (
-    <div style={{
-      width: 232, height: '100vh', display: 'flex', flexDirection: 'column',
-      background: 'rgba(255,255,255,0.45)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
-      borderRight: '1px solid rgba(255,255,255,0.65)',
-      fontFamily: "'DM Sans', sans-serif",
-    }}>
+    <div
+      className="w-56 h-screen flex flex-col"
+      style={{
+        background: 'rgba(255,255,255,0.45)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRight: '1px solid rgba(255,255,255,0.65)',
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap');
-        .sb-link { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:9px; font-size:13.5px; font-weight:400; color:#6a3a3a; text-decoration:none; transition:background 0.15s, color 0.15s; }
+        .sb-link { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:9px; font-size:13px; font-weight:400; color:#6a3a3a; text-decoration:none; transition:background 0.15s,color 0.15s; border:1px solid transparent; }
         .sb-link:hover { background:rgba(127,29,29,0.06); color:#7F1D1D; }
-        .sb-link.active { background:rgba(127,29,29,0.1); color:#7F1D1D; font-weight:500; border:1px solid rgba(127,29,29,0.12); }
-        .sb-link:not(.active) { border:1px solid transparent; }
-        .sb-signout:hover { background:rgba(127,29,29,0.06) !important; color:#7F1D1D !important; }
+        .sb-link.active { background:rgba(127,29,29,0.1); color:#7F1D1D; font-weight:500; border-color:rgba(127,29,29,0.12); }
+        .sb-signout:hover { background:rgba(127,29,29,0.06)!important; color:#7F1D1D!important; }
       `}</style>
 
-      {/* Logo */}
-      <div style={{ padding:'22px 20px', borderBottom:'1px solid rgba(127,29,29,0.08)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+      {/* Logo row */}
+      <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: '1px solid rgba(127,29,29,0.08)' }}>
+        <div className="flex items-center gap-2.5">
           <Logo />
           <div>
-            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:'#7F1D1D', lineHeight:1.2 }}>MedCore AI</div>
-            <div style={{ fontSize:10, color:'#9a6060', fontWeight:300 }}>Clinical Intelligence</div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700, color: '#7F1D1D', lineHeight: 1.2 }}>Pulse AI</div>
+            <div className="text-xs font-light" style={{ color: '#9a6060' }}>Clinical Intelligence</div>
           </div>
         </div>
+        {/* Close button — mobile only */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="md:hidden p-1.5 rounded-lg"
+            style={{ color: '#7a4a4a', background: 'rgba(127,29,29,0.05)' }}
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
-      <nav style={{ flex:1, padding:'14px 10px', display:'flex', flexDirection:'column', gap:3 }}>
-        <div style={{ fontSize:10, fontWeight:600, color:'#c4a0a0', letterSpacing:'0.08em', padding:'4px 14px 10px', textTransform:'uppercase' }}>Navigation</div>
+      <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
+        <div className="text-xs font-semibold tracking-widest px-3.5 pb-2" style={{ color: '#c4a0a0' }}>NAVIGATION</div>
         {navItems.map(({ path, icon: Icon, label }) => (
-          <NavLink key={path} to={path} end={path === '/dashboard'}
-            className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`}>
-            <Icon size={15} />
+          <NavLink
+            key={path} to={path} end={path === '/dashboard'}
+            className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`}
+            onClick={onClose}
+          >
+            <Icon size={14} />
             {label}
           </NavLink>
         ))}
       </nav>
 
-      {/* User */}
-      <div style={{ padding:'12px 10px', borderTop:'1px solid rgba(127,29,29,0.08)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:9, padding:'10px 12px', background:'rgba(127,29,29,0.05)', borderRadius:9, marginBottom:6, border:'1px solid rgba(127,29,29,0.08)' }}>
-          <div style={{ width:30, height:30, borderRadius:'50%', background:'rgba(127,29,29,0.1)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+      {/* User section */}
+      <div className="px-3 py-3" style={{ borderTop: '1px solid rgba(127,29,29,0.08)' }}>
+        <div
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-1"
+          style={{ background: 'rgba(127,29,29,0.05)', border: '1px solid rgba(127,29,29,0.08)' }}
+        >
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(127,29,29,0.1)' }}
+          >
             <User size={13} color="#7F1D1D" />
           </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <p style={{ fontSize:12, fontWeight:500, color:'#2a0a0a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', margin:0 }}>
-              {user?.email || 'User'}
-            </p>
-            <p style={{ fontSize:10, color:'#9a6060', margin:0, fontWeight:300 }}>Medical Professional</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium truncate" style={{ color: '#2a0a0a' }}>{user?.email || 'User'}</p>
+            <p className="text-xs font-light" style={{ color: '#9a6060' }}>Medical Professional</p>
           </div>
         </div>
-        <button onClick={handleSignOut} className="sb-signout" style={{
-          width:'100%', display:'flex', alignItems:'center', gap:9, padding:'10px 14px',
-          borderRadius:9, border:'none', background:'transparent', fontSize:13.5,
-          color:'#7a4a4a', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'background 0.15s, color 0.15s',
-        }}>
-          <LogOut size={14} /> Sign Out
+        <button
+          onClick={handleSignOut}
+          className="sb-signout w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm transition-all"
+          style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", color: '#7a4a4a' }}
+        >
+          <LogOut size={13} /> Sign Out
         </button>
       </div>
     </div>

@@ -10,11 +10,29 @@ const frosted: React.CSSProperties = {
   border: '1px solid rgba(255,255,255,0.6)',
 };
 
+const inputBase: React.CSSProperties = {
+  width: '100%',
+  background: 'rgba(255,255,255,0.55)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  border: '1px solid rgba(255,255,255,0.7)',
+  borderRadius: 9,
+  fontSize: 14,
+  color: '#2a0a0a',
+  fontFamily: "'DM Sans', sans-serif",
+  outline: 'none',
+  transition: 'border-color 0.15s, box-shadow 0.15s',
+  boxSizing: 'border-box' as const,
+  padding: '11px 14px',
+};
+
 export default function PatientManager() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<DiagnosisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ patientId:'P-2024-001', age:'', gender:'', symptoms:'', duration:'', history:'' });
+  const [formData, setFormData] = useState({
+    patientId: 'P-2024-001', age: '', gender: '', symptoms: '', duration: '', history: '',
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -28,10 +46,14 @@ export default function PatientManager() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:3000/diagnose', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/diagnose`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId: formData.patientId, age: parseInt(formData.age), gender: formData.gender, symptoms: formData.symptoms, duration: formData.duration, history: formData.history }),
+        body: JSON.stringify({
+          patientId: formData.patientId, age: parseInt(formData.age),
+          gender: formData.gender, symptoms: formData.symptoms,
+          duration: formData.duration, history: formData.history,
+        }),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -54,69 +76,60 @@ export default function PatientManager() {
     }
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '11px 14px',
-    background: 'rgba(255,255,255,0.55)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    border: '1px solid rgba(255,255,255,0.7)',
-    borderRadius: 9, fontSize: 14, color: '#2a0a0a',
-    boxSizing: 'border-box' as const,
-    fontFamily: "'DM Sans', sans-serif", outline: 'none',
-    transition: 'border-color 0.15s, box-shadow 0.15s',
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 6,
-    fontSize: 13, fontWeight: 500, color: '#3a1a1a', marginBottom: 8,
-  };
-
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", maxWidth:860, margin:'0 auto' }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap');
-        .pm-input:focus { border-color:rgba(127,29,29,0.45) !important; box-shadow:0 0 0 3px rgba(127,29,29,0.08) !important; }
+        .pm-serif { font-family: 'Playfair Display', serif; }
+        .pm-input:focus { border-color:rgba(127,29,29,0.45)!important; box-shadow:0 0 0 3px rgba(127,29,29,0.08)!important; }
         .pm-input::placeholder { color:#9a6060; }
-        .pm-btn:hover:not(:disabled) { background:#6b1818 !important; }
+        .pm-btn:hover:not(:disabled) { background:#6b1818!important; }
         @keyframes pm-spin { to { transform:rotate(360deg); } }
         @keyframes pm-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
       `}</style>
 
-      <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      <div className="max-w-4xl mx-auto flex flex-col gap-5">
 
         {/* Page header */}
         <div>
-          <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, fontWeight:700, color:'#2a0a0a', marginBottom:4 }}>Patient Diagnosis</h2>
-          <p style={{ fontSize:13, color:'#7a4a4a', fontWeight:300 }}>Fill in patient details to generate an AI-assisted clinical assessment</p>
+          <h2 className="pm-serif font-bold mb-1" style={{ fontSize: 'clamp(20px,3vw,26px)', color: '#2a0a0a' }}>Patient Diagnosis</h2>
+          <p className="text-sm font-light" style={{ color: '#7a4a4a' }}>Fill in patient details to generate an AI-assisted clinical assessment</p>
         </div>
 
         {/* Form card */}
-        <div style={{ ...frosted, borderRadius:16, padding:'32px 36px' }}>
-          <div style={{ borderBottom:'1px solid rgba(127,29,29,0.08)', paddingBottom:18, marginBottom:26 }}>
-            <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, color:'#2a0a0a', marginBottom:3 }}>Patient Information</h3>
-            <p style={{ fontSize:12, color:'#8a5050', fontWeight:300 }}>Age, gender and symptoms are required</p>
+        <div className="rounded-2xl p-6 md:p-9" style={frosted}>
+          <div className="pb-5 mb-6" style={{ borderBottom: '1px solid rgba(127,29,29,0.08)' }}>
+            <h3 className="pm-serif font-bold mb-1" style={{ fontSize: 18, color: '#2a0a0a' }}>Patient Information</h3>
+            <p className="text-xs font-light" style={{ color: '#8a5050' }}>Age, gender and symptoms are required</p>
           </div>
 
           {error && (
-            <div style={{ marginBottom:20, padding:'11px 16px', borderRadius:9, background:'rgba(127,29,29,0.06)', border:'1px solid rgba(127,29,29,0.18)', fontSize:13, color:'#7F1D1D', display:'flex', alignItems:'center', gap:8 }}>
+            <div className="mb-5 px-4 py-3 rounded-xl flex items-center gap-2 text-sm"
+              style={{ background: 'rgba(127,29,29,0.06)', border: '1px solid rgba(127,29,29,0.18)', color: '#7F1D1D' }}>
               <AlertTriangle size={14} /> {error}
             </div>
           )}
 
-          <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-            {/* Row 1 */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+          <div className="flex flex-col gap-5">
+            {/* Row 1: ID / Age / Gender — stacks to 1 col on mobile, 3 on md+ */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label style={labelStyle}><User size={13} color="#7F1D1D" /> Patient ID</label>
-                <input name="patientId" value={formData.patientId} onChange={handleInputChange} className="pm-input" style={inputStyle} />
+                <label className="flex items-center gap-1.5 text-xs font-medium mb-2" style={{ color: '#3a1a1a' }}>
+                  <User size={12} color="#7F1D1D" /> Patient ID
+                </label>
+                <input name="patientId" value={formData.patientId} onChange={handleInputChange} className="pm-input" style={inputBase} />
               </div>
               <div>
-                <label style={labelStyle}><Calendar size={13} color="#7F1D1D" /> Age</label>
-                <input name="age" type="number" placeholder="Years" value={formData.age} onChange={handleInputChange} className="pm-input" style={inputStyle} />
+                <label className="flex items-center gap-1.5 text-xs font-medium mb-2" style={{ color: '#3a1a1a' }}>
+                  <Calendar size={12} color="#7F1D1D" /> Age
+                </label>
+                <input name="age" type="number" placeholder="Years" value={formData.age} onChange={handleInputChange} className="pm-input" style={inputBase} />
               </div>
               <div>
-                <label style={labelStyle}><User size={13} color="#7F1D1D" /> Gender</label>
-                <select name="gender" value={formData.gender} onChange={handleInputChange} className="pm-input" style={{ ...inputStyle, appearance:'none' as const }}>
+                <label className="flex items-center gap-1.5 text-xs font-medium mb-2" style={{ color: '#3a1a1a' }}>
+                  <User size={12} color="#7F1D1D" /> Gender
+                </label>
+                <select name="gender" value={formData.gender} onChange={handleInputChange} className="pm-input" style={{ ...inputBase, appearance: 'none' as const }}>
                   <option value="">Select</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -125,32 +138,33 @@ export default function PatientManager() {
             </div>
 
             <div>
-              <label style={labelStyle}><Activity size={13} color="#7F1D1D" /> Symptoms & Chief Complaint</label>
+              <label className="flex items-center gap-1.5 text-xs font-medium mb-2" style={{ color: '#3a1a1a' }}>
+                <Activity size={12} color="#7F1D1D" /> Symptoms & Chief Complaint
+              </label>
               <textarea name="symptoms" rows={3} placeholder="Describe patient symptoms, vital signs, physical examination findings..."
-                value={formData.symptoms} onChange={handleInputChange} className="pm-input" style={{ ...inputStyle, resize:'vertical' }} />
+                value={formData.symptoms} onChange={handleInputChange} className="pm-input" style={{ ...inputBase, resize: 'vertical' }} />
             </div>
 
             <div>
-              <label style={labelStyle}><Clock size={13} color="#7F1D1D" /> Duration of Symptoms</label>
-              <input name="duration" placeholder="e.g., 3 days, 2 weeks, 1 month" value={formData.duration} onChange={handleInputChange} className="pm-input" style={inputStyle} />
+              <label className="flex items-center gap-1.5 text-xs font-medium mb-2" style={{ color: '#3a1a1a' }}>
+                <Clock size={12} color="#7F1D1D" /> Duration of Symptoms
+              </label>
+              <input name="duration" placeholder="e.g., 3 days, 2 weeks, 1 month" value={formData.duration} onChange={handleInputChange} className="pm-input" style={inputBase} />
             </div>
 
             <div>
-              <label style={labelStyle}><FileText size={13} color="#7F1D1D" /> Medical History & Current Medications</label>
+              <label className="flex items-center gap-1.5 text-xs font-medium mb-2" style={{ color: '#3a1a1a' }}>
+                <FileText size={12} color="#7F1D1D" /> Medical History & Current Medications
+              </label>
               <textarea name="history" rows={2} placeholder="Relevant medical history, allergies, current medications..."
-                value={formData.history} onChange={handleInputChange} className="pm-input" style={{ ...inputStyle, resize:'vertical' }} />
+                value={formData.history} onChange={handleInputChange} className="pm-input" style={{ ...inputBase, resize: 'vertical' }} />
             </div>
 
-            <button onClick={handleGenerate} disabled={isLoading} className="pm-btn" style={{
-              width:'100%', background:'#7F1D1D', color:'#f5ebe8', border:'none',
-              padding:'13px 0', borderRadius:9, fontSize:14, fontWeight:500,
-              cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.72 : 1,
-              display:'flex', alignItems:'center', justifyContent:'center', gap:10,
-              transition:'background 0.18s', fontFamily:"'DM Sans',sans-serif",
-            }}>
+            <button onClick={handleGenerate} disabled={isLoading} className="pm-btn w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-medium transition-all"
+              style={{ background: '#7F1D1D', color: '#f5ebe8', border: 'none', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.72 : 1, fontFamily: "'DM Sans', sans-serif" }}>
               {isLoading
-                ? <><div style={{ width:17, height:17, border:'2px solid rgba(250,224,216,0.3)', borderTopColor:'#fae0d8', borderRadius:'50%', animation:'pm-spin 0.8s linear infinite' }} /> Analyzing Clinical Data...</>
-                : <><Activity size={16} /> Generate AI Diagnosis</>
+                ? <><div className="w-4 h-4 rounded-full border-2" style={{ borderColor: 'rgba(250,224,216,0.3)', borderTopColor: '#fae0d8', animation: 'pm-spin 0.8s linear infinite' }} /> Analyzing Clinical Data...</>
+                : <><Activity size={15} /> Generate AI Diagnosis</>
               }
             </button>
           </div>
@@ -158,33 +172,35 @@ export default function PatientManager() {
 
         {/* Results */}
         {result ? (
-          <div style={{ animation:'pm-fade 0.3s ease' }}>
+          <div style={{ animation: 'pm-fade 0.3s ease' }}>
             <DiagnosisResults result={result} onClose={() => setResult(null)} />
           </div>
         ) : (
-          <div style={{ ...frosted, borderRadius:16, padding:'52px 36px', textAlign:'center', minHeight:240, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-            <div style={{ marginBottom:18, opacity:0.15 }}>
-              <svg viewBox="0 0 200 36" fill="none" style={{ width:180 }}>
+          <div className="rounded-2xl p-10 md:p-14 flex flex-col items-center justify-center text-center" style={{ ...frosted, minHeight: 220 }}>
+            <div className="mb-4 opacity-15">
+              <svg viewBox="0 0 200 36" fill="none" className="w-40">
                 <path d="M0 18 L38 18 L50 5 L58 31 L66 9 L74 18 L200 18" stroke="#7F1D1D" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <h3 style={{ fontSize:15, fontWeight:500, color:'#5a3a3a', marginBottom:5 }}>Fill out the patient information form</h3>
-            <p style={{ fontSize:13, color:'#9a6060', fontWeight:300 }}>AI diagnostic results will appear here</p>
+            <h3 className="text-sm font-medium mb-1" style={{ color: '#5a3a3a' }}>Fill out the patient information form</h3>
+            <p className="text-xs font-light" style={{ color: '#9a6060' }}>AI diagnostic results will appear here</p>
           </div>
         )}
 
         {/* Disclaimer */}
-        <div style={{ background:'rgba(127,29,29,0.05)', border:'1px solid rgba(127,29,29,0.1)', borderRadius:10, padding:'13px 18px', display:'flex', alignItems:'center', gap:12 }}>
-          <AlertTriangle size={15} color="#7F1D1D" style={{ flexShrink:0 }} />
-          <p style={{ fontSize:12, color:'#7a4a4a', lineHeight:1.6, margin:0 }}>
+        <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl"
+          style={{ background: 'rgba(127,29,29,0.05)', border: '1px solid rgba(127,29,29,0.1)' }}>
+          <AlertTriangle size={14} color="#7F1D1D" className="flex-shrink-0" />
+          <p className="text-xs leading-relaxed" style={{ color: '#7a4a4a' }}>
             This AI system is for clinical decision support only. Always validate with professional medical judgment and additional testing.
           </p>
         </div>
       </div>
 
       {/* Help button */}
-      <div style={{ position:'fixed', bottom:24, right:24 }}>
-        <button style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', border:'1px solid rgba(255,255,255,0.7)', borderRadius:'50%', width:42, height:42, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#7a4a4a' }}>
+      <div className="fixed bottom-6 right-6">
+        <button className="w-11 h-11 rounded-full flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.7)', color: '#7a4a4a', cursor: 'pointer' }}>
           <HelpCircle size={18} />
         </button>
       </div>

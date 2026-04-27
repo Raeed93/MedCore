@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import cookieParser from 'cookie-parser';  
 import authRoutes from './routes/auth.routes'; 
+import jwt from 'jsonwebtoken';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -101,34 +102,42 @@ app.post('/patients', async (req: Request, res: Response) => {
 
 // Generate diagnosis using RAG
 app.post('/diagnose', async (req: Request, res: Response) => {
-    try {
-        console.log('Diagnosis request received:', req.body);
-        
-        const response = await axios.post(
-            `${AI_SERVICE_URL}/diagnose-rag`,
-            req.body,
-            {
-                headers: { 'Content-Type': 'application/json' },
-                timeout: 120000 // 2 minute timeout for AI processing
-            }
-        );
-        
-        // Save diagnosis to database
-        const diagnosisData = {
-            patient_id: req.body.patientId,
-            symptoms: req.body.symptoms,
-            diagnosis_result: JSON.stringify(response.data),
-            created_at: new Date()
-        };
-        
-        await pool.query(
-            `INSERT INTO diagnosis_history 
-            (patient_id, symptoms, diagnosis_result, created_at) 
-            VALUES ($1, $2, $3, $4)`,
-            [diagnosisData.patient_id, diagnosisData.symptoms, diagnosisData.diagnosis_result, diagnosisData.created_at]
-        );
-        
-        res.json(response.data);
+  try {
+    // Get authenticated user's real ID from cookie
+    const token = req.cookies?.auth_token;
+    let realPatientId = req.body.patientId; // fallback
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(
+          token,
+          process.env.JWT_SECRET || 'fallback-secret-change-me'
+        ) as { patientId: number };
+        realPatientId = decoded.patientId; // use real integer ID
+      } catch {
+        // token invalid, continue with form value
+      }
+    }
+
+    const response = await axios.post(
+      `${AI_SERVICE_URL}/diagnose-rag`,
+      req.body,
+      { headers: { 'Content-Type': 'application/json' }, timeout: 120000 }
+    );
+
+    await pool.query(
+      `INSERT INTO diagnosis_history 
+       (patient_id, symptoms, diagnosis_result, created_at) 
+       VALUES ($1, $2, $3, $4)`,
+      [
+        String(realPatientId),
+        req.body.symptoms,
+        JSON.stringify(response.data),
+        new Date()
+      ]
+    );
+
+    res.json(response.data);
     } catch (error) {
         console.error('Error calling AI service:', error);
         
@@ -253,15 +262,35 @@ app.get('/diagnosis-history/:patientId', async (req: Request, res: Response) => 
 
 // Get all diagnosis history
 app.get('/diagnosis-history', async (req: Request, res: Response) => {
-    try {
-        const result = await pool.query(
-            'SELECT * FROM diagnosis_history ORDER BY created_at DESC LIMIT 100'
-        );
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
-    }
+  try {
+    const token = req.cookies?.auth_token;
+    if (!token) return res.status(401).json({ message: 'Not authenticated' });
+
+    const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-me';
+    const decoded = jwt.verify(token, JWT_SECRET) as { patientId: number };
+
+    const result = await pool.query(
+    `SELECT id, patient_id, symptoms, diagnosis_result, created_at
+    FROM diagnosis_history
+    WHERE patient_id = $1::text
+    ORDER BY created_at DESC
+    LIMIT 50`,
+    [String(decoded.patientId)]
+    );
+
+    // Parse the JSON stored in diagnosis_result
+    const rows = result.rows.map(row => ({
+      ...row,
+      diagnosis_result: typeof row.diagnosis_result === 'string'
+        ? JSON.parse(row.diagnosis_result)
+        : row.diagnosis_result,
+    }));
+
+    res.json({ success: true, history: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
 });
 
 // ============================================

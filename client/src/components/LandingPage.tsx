@@ -76,7 +76,7 @@ export default function LandingPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Logo size={34} />
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: '#7F1D1D' }}>
-            MedCore AI
+            Pulse AI
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
@@ -211,7 +211,7 @@ export default function LandingPage() {
               Why Medical Professionals Choose Us
             </h2>
             <p style={{ fontSize: 14, color: 'rgba(250,240,241,0.65)', fontWeight: 300, lineHeight: 1.7 }}>
-              Join thousands of clinicians who trust MedCore AI for faster, more accurate diagnostic support.
+              Join thousands of clinicians who trust Pulse AI for faster, more accurate diagnostic support.
             </p>
           </div>
           <div style={{ display: 'grid', gap: 14 }}>
@@ -254,7 +254,7 @@ export default function LandingPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Logo size={20} />
-          <span style={{ fontSize: 13, color: '#7a4a4a' }}>© 2024 MedCore AI. Clinical decision support only.</span>
+          <span style={{ fontSize: 13, color: '#7a4a4a' }}>© 2024 Pulse AI. Clinical decision support only.</span>
         </div>
         <div style={{ display: 'flex', gap: 24 }}>
           {['HIPAA Compliant', 'FDA Registered', 'ISO 27001'].map(t => (

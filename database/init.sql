@@ -34,6 +34,11 @@ CREATE INDEX IF NOT EXISTS idx_magic_links_expires ON magic_links(expires_at);
 INSERT INTO patients (name, age, condition) 
 VALUES ('John Doe', 45, 'Flu Symptoms');
 
+ALTER TABLE patients
+ADD COLUMN IF NOT EXISTS specialty VARCHAR(255),
+ADD COLUMN IF NOT EXISTS hospital VARCHAR(255),
+ADD COLUMN IF NOT EXISTS location VARCHAR(255),
+ADD COLUMN IF NOT EXISTS license_number VARCHAR(100);
 -- Add a sample diagnosis (optional)
 INSERT INTO diagnosis_history (patient_id, symptoms, diagnosis_result, created_at)
 VALUES (

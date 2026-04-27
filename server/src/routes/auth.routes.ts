@@ -1,7 +1,17 @@
 import { Router, Request, Response } from 'express';
 import { requestMagicLink, verifyMagicLink } from '../services/auth.service';
+import jwt from 'jsonwebtoken';
+import { Pool } from 'pg';
 
 const router = Router();
+
+const pool = new Pool({
+  host: process.env.PGHOST || 'localhost',
+  port: parseInt(process.env.PGPORT || '5432'),
+  database: process.env.POSTGRES_DB || 'medcore_ai',
+  user: process.env.POSTGRES_USER || 'admin',
+  password: process.env.POSTGRES_PASSWORD || 'password123',
+});
 
 /**
  * ENDPOINT 1: Send Magic Link
@@ -148,12 +158,94 @@ router.post('/logout', (req: Request, res: Response) => {
  * This endpoint will be protected by middleware
  */
 router.get('/me', async (req: Request, res: Response) => {
-  // We'll implement this after creating the middleware
-  // For now, just return a placeholder
-  return res.status(200).json({
-    success: true,
-    message: 'This endpoint will return current user after middleware is added',
-  });
+  try {
+    const token = req.cookies?.auth_token;
+
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-me') as {
+      patientId: number;
+      email: string;
+      name: string;
+    };
+
+    // Fetch fresh user data from DB
+    const result = await pool.query(
+      'SELECT id, email, name, created_at FROM patients WHERE id = $1',
+      [decoded.patientId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = result.rows[0];
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        createdAt: user.created_at,
+      },
+    });
+  } catch (error: any) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired session' });
+  }
+});
+
+// GET profile
+router.get('/profile', async (req: Request, res: Response) => {
+  try {
+    const token = req.cookies?.auth_token;
+    if (!token) return res.status(401).json({ success: false, message: 'Not authenticated' });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-me') as { patientId: number };
+
+    const result = await pool.query(
+      `SELECT id, email, name, specialty, hospital, location, license_number, created_at
+       FROM patients WHERE id = $1`,
+      [decoded.patientId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    return res.status(200).json({ success: true, profile: result.rows[0] });
+  } catch (error) {
+    return res.status(401).json({ success: false, message: 'Invalid session' });
+  }
+});
+
+// PATCH profile — update fields
+router.patch('/profile', async (req: Request, res: Response) => {
+  try {
+    const token = req.cookies?.auth_token;
+    if (!token) return res.status(401).json({ success: false, message: 'Not authenticated' });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-me') as { patientId: number };
+    const { name, specialty, hospital, location, license_number } = req.body;
+
+    const result = await pool.query(
+      `UPDATE patients
+       SET name = COALESCE($1, name),
+           specialty = COALESCE($2, specialty),
+           hospital = COALESCE($3, hospital),
+           location = COALESCE($4, location),
+           license_number = COALESCE($5, license_number)
+       WHERE id = $6
+       RETURNING id, email, name, specialty, hospital, location, license_number`,
+      [name, specialty, hospital, location, license_number, decoded.patientId]
+    );
+
+    return res.status(200).json({ success: true, profile: result.rows[0] });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
 });
 
 export default router;
