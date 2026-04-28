@@ -20,7 +20,7 @@ class RAGEngine:
     def __init__(self, hf_token: str, model_name: str = "meta-llama/Llama-3.1-8B-Instruct"):
         self.hf_token = hf_token
         self.model_name = model_name
-        self.hf_api_url = "https://router.huggingface.co/v1/chat/completions"
+        self.hf_api_url = f"https://api-inference.huggingface.co/models/{self.model_name}"
         chroma_path = os.getenv("CHROMA_PERSIST_DIRECTORY", "./chroma_db")
         self.chroma_client = chromadb.PersistentClient(path=chroma_path)
         
@@ -197,20 +197,13 @@ Base your assessment ONLY on the medical literature provided and standard clinic
 
         # NEW API FORMAT - OpenAI-compatible chat completions
         payload = {
-            "model": self.model_name,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a medical AI assistant. Provide accurate, evidence-based medical information."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            "max_tokens": 800,
-            "temperature": 0.3,
-            "top_p": 0.95
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": 800,
+                "temperature": 0.3,
+                "top_p": 0.95,
+                "return_full_text": False
+            }
         }
 
         for attempt in range(max_retries):
@@ -226,8 +219,8 @@ Base your assessment ONLY on the medical literature provided and standard clinic
                     result = response.json()
 
                     # Extract content from new API format
-                    if "choices" in result and len(result["choices"]) > 0:
-                        return result["choices"][0]["message"]["content"]
+                    if isinstance(result, list) and len(result) > 0:
+                        return result[0].get("generated_text", str(result))
                     else:
                         return str(result)
 

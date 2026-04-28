@@ -24,8 +24,12 @@ app.add_middleware(
 )
 
 # Initialize RAG Engine and Document Processor
+hf_token = os.getenv("HUGGINGFACE_API_TOKEN")
+if not hf_token:
+    raise RuntimeError("HUGGINGFACE_API_TOKEN is not set. Check your .env file.")
+
 rag_engine = RAGEngine(
-    hf_token=os.getenv("HUGGINGFACE_API_TOKEN"),
+    hf_token=hf_token,
     model_name=os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
 )
 doc_processor = DocumentProcessor()
