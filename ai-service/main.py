@@ -24,13 +24,13 @@ app.add_middleware(
 )
 
 # Initialize RAG Engine and Document Processor
-hf_token = os.getenv("HUGGINGFACE_API_TOKEN")
-if not hf_token:
-    raise RuntimeError("HUGGINGFACE_API_TOKEN is not set. Check your .env file.")
+groq_api_key = os.getenv("GROQ_API_KEY")
+if not groq_api_key:
+    raise RuntimeError("GROQ_API_KEY is not set. Check your .env file.")
 
 rag_engine = RAGEngine(
-    hf_token=hf_token,
-    model_name=os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
+    groq_api_key=groq_api_key,
+    model_name=os.getenv("GROQ_MODEL", "llama3-70b-8192")
 )
 doc_processor = DocumentProcessor()
 
@@ -68,7 +68,7 @@ def read_root():
     """Health check endpoint"""
     return {
         "status": "AI Service is Running",
-        "model": os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct"),
+        "model": os.getenv("GROQ_MODEL", "llama3-70b-8192"),
         "rag_enabled": True,
         "documents_indexed": rag_engine.get_document_count()
     }
@@ -118,7 +118,7 @@ async def upload_medical_documents(files: List[UploadFile] = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing documents: {str(e)}")
 
-# this points takes my initial symptomps, searches the upoladed documents, sends patients data + relevant documents to BioMistral AI and gets back a diagnose
+# this endpoint takes my initial symptoms, searches the uploaded documents, sends patients data + relevant documents to BioMistral AI and gets back a diagnosis
 
 @app.post("/diagnose-rag", response_model=DiagnosisResponse)
 async def diagnose_with_rag(patient: PatientInput):
@@ -163,7 +163,7 @@ async def analyze_symptoms(input: PatientInput):
     Legacy endpoint - kept for backward compatibility.
     Redirects to RAG-based diagnosis.
     """
-    return await diagnose_rag(input)
+    return await diagnose_with_rag(input)
 
 # shows you all the medical documents listed in chromeDB
 @app.get("/documents")
@@ -195,10 +195,10 @@ def health_check():
     """Detailed health check with system status"""
     return {
         "service": "healthy",
-        "huggingface_token_configured": bool(os.getenv("HUGGINGFACE_API_TOKEN")),
+        "groq_api_key_configured": bool(os.getenv("GROQ_API_KEY")),
         "chroma_db_status": "connected",
         "total_documents": rag_engine.get_document_count(),
-        "model": os.getenv("HUGGINGFACE_MODEL")
+        "model": os.getenv("GROQ_MODEL")
     }
 
 if __name__ == "__main__":

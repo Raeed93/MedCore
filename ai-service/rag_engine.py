@@ -6,6 +6,8 @@ import requests
 from typing import List, Dict, Any
 import json
 import time
+from groq import Groq
+
 
 class RAGEngine:
     """
@@ -14,28 +16,29 @@ class RAGEngine:
     Handles:
     - Document embedding and storage in ChromaDB
     - Similarity search for relevant medical information
-    - HuggingFace API calls to BioMistral
+    - Groq API calls to BioMistral
     """
     
-    def __init__(self, hf_token: str, model_name: str = "meta-llama/Llama-3.1-8B-Instruct"):
-        self.hf_token = hf_token
+    def __init__(self, groq_api_key: str, model_name: str = "llama3-70b-8192"):
         self.model_name = model_name
-        self.hf_api_url = f"https://api-inference.huggingface.co/models/{self.model_name}"
+        
+        # Initialize Groq client
+        self.client = Groq(api_key=groq_api_key)
+        
+        # Initialize ChromaDB
         chroma_path = os.getenv("CHROMA_PERSIST_DIRECTORY", "./chroma_db")
         self.chroma_client = chromadb.PersistentClient(path=chroma_path)
-        
-        # Get or create collection for medical documents
         collection_name = os.getenv("CHROMA_COLLECTION_NAME", "medical_documents")
         self.collection = self.chroma_client.get_or_create_collection(
             name=collection_name,
             metadata={"description": "Medical knowledge base for RAG"}
         )
         
-        # Initialize embedding model (converts text to vectors)
+        # Initialize embedding model
         embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
         print(f"Loading embedding model: {embedding_model}")
         self.embedder = SentenceTransformer(embedding_model)
-        print(f"RAG Engine initialized. Documents in collection: {self.collection.count()}")
+        print(f"RAG Engine initialized. Documents: {self.collection.count()}")
     
     def add_documents(self, chunks: List[Dict[str, Any]], metadata: Dict[str, Any]):
         """
@@ -110,7 +113,7 @@ class RAGEngine:
     
     def generate_diagnosis(self, patient_data: Dict[str, Any], context_docs: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Generate diagnosis using HuggingFace API with RAG context
+        Generate diagnosis using Groq API with RAG context
         
         Args:
             patient_data: Patient information from the form
@@ -128,8 +131,8 @@ class RAGEngine:
         # Build the prompt for BioMistral
         prompt = self._build_medical_prompt(patient_data, context_text)
         
-        # Call HuggingFace Inference API
-        diagnosis_text = self._call_huggingface_api(prompt)
+        # Call Groq API
+        diagnosis_text = self._call_groq_api(prompt)
         
         # Parse the response into structured format
         parsed_diagnosis = self._parse_diagnosis_response(diagnosis_text, context_docs)
@@ -179,69 +182,28 @@ Base your assessment ONLY on the medical literature provided and standard clinic
 """
         return prompt
     
-    def _call_huggingface_api(self, prompt: str, max_retries: int = 3) -> str:
-        """
-        Call HuggingFace Router API with retry logic (NEW OpenAI-compatible format)
-        
-        Args:
-            prompt: The medical prompt
-            max_retries: Number of retries if API is loading
-            
-        Returns:
-            Generated text from Llama 3.1
-        """
-        headers = {
-            "Authorization": f"Bearer {self.hf_token}",
-            "Content-Type": "application/json"
-        }
-
-        # NEW API FORMAT - OpenAI-compatible chat completions
-        payload = {
-            "inputs": prompt,
-            "parameters": {
-                "max_new_tokens": 800,
-                "temperature": 0.3,
-                "top_p": 0.95,
-                "return_full_text": False
-            }
-        }
-
-        for attempt in range(max_retries):
-            try:
-                response = requests.post(
-                    self.hf_api_url,
-                    headers=headers,
-                    json=payload,
-                    timeout=120
-                )
-
-                if response.status_code == 200:
-                    result = response.json()
-
-                    # Extract content from new API format
-                    if isinstance(result, list) and len(result) > 0:
-                        return result[0].get("generated_text", str(result))
-                    else:
-                        return str(result)
-
-                elif response.status_code == 503:
-                    # Model is loading, wait and retry
-                    wait_time = 20 * (attempt + 1)
-                    print(f"Model loading... Waiting {wait_time}s before retry {attempt + 1}/{max_retries}")
-                    time.sleep(wait_time)
-                    continue
-
-                else:
-                    print(f"HuggingFace API error: {response.status_code} - {response.text}")
-                    return self._fallback_diagnosis()
-
-            except Exception as e:
-                print(f"Error calling HuggingFace API (attempt {attempt + 1}): {str(e)}")
-                if attempt == max_retries - 1:
-                    return self._fallback_diagnosis()
-                time.sleep(10)
-
-        return self._fallback_diagnosis()
+    def _call_groq_api(self, prompt: str) -> str:
+        """Call Groq API - fast, free, reliable"""
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a medical AI assistant. Provide accurate, evidence-based medical information."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=800,
+                temperature=0.3,
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"Groq API error: {str(e)}")
+            return self._fallback_diagnosis()
     
     def _parse_diagnosis_response(self, diagnosis_text: str, sources: List[Dict]) -> Dict[str, Any]:
         """
@@ -335,7 +297,7 @@ Base your assessment ONLY on the medical literature provided and standard clinic
         }
     
     def _fallback_diagnosis(self) -> str:
-        """Fallback response when HuggingFace API fails"""
+        """Fallback response when Groq API fails"""
         return """
 PRIMARY DIAGNOSIS:
 - Clinical evaluation required

@@ -46,10 +46,10 @@ services:
       - ./ai-service:/app # <--- This allows live Python updates!
     environment:
       - PYTHONUNBUFFERED=1
-      - HUGGINGFACE_API_TOKEN=${HUGGINGFACE_API_TOKEN}  
+      - GROQ_API_KEY=${GROQ_API_KEY}
       - CHROMA_PERSIST_DIRECTORY=/app/chroma_db
       - CHROMA_COLLECTION_NAME=medical_documents
-      - HUGGINGFACE_MODEL=mistralai/Mistral-7B-Instruct-v0.2
+      - GROQ_MODEL=${GROQ_MODEL}
       - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
   # 4. React Client (The Face)
