@@ -41,7 +41,7 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://ai-service:8000';
 // ============================================
 
 app.get('/', (req: Request, res: Response) => {
-    res.send('MedCore Backend is Running! 🏥');
+    res.send('Pulse AI Backend is Running! 🏥');
 });
 
 app.get('/health', async (req: Request, res: Response) => {
