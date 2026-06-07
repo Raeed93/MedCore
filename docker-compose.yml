@@ -5,7 +5,7 @@ services:
     container_name: medcore_db
     environment:
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password123
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: medcore_ai
     ports:
       - "5434:5432"
@@ -24,16 +24,18 @@ services:
     environment:
       - NODE_ENV=development
       - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=password123
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=medcore_ai
       - PGHOST=db
       - AI_SERVICE_URL=http://ai-service:8000
       - SMTP_HOST=smtp.gmail.com
       - SMTP_PORT=587
       - SMTP_USER=raed.hassaan@gmail.com
-      - SMTP_PASS=uffmsawxeqrfxxuf
-      - JWT_SECRET=045217dc87bec2668f019076915db35033414e43c3bf307523c9f5df6da0c2ca
-      - FRONTEND_URL=http://localhost:5173
+      - SMTP_PASS=${SMTP_PASS}
+      - JWT_SECRET=${JWT_SECRET}
+      - FRONTEND_URL=https://pulsemd.live
+      - CORS_ORIGIN=https://pulsemd.live
+
     depends_on:
       - db
       - ai-service
@@ -57,7 +59,7 @@ services:
     build: ./client
     command: npm run dev -- --host 
     ports:
-      - "5173:5173"
+      - "5173:80"
     volumes:
       - ./client:/app # <--- This allows live React updates!
       - /app/node_modules
