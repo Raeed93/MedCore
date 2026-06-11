@@ -54,3 +54,4 @@ SETUP_GUIDE.md
 *.dbawscliv2.zip
 aws/
 awscliv2.zip
+server/env_file
