@@ -55,3 +55,4 @@ SETUP_GUIDE.md
 aws/
 awscliv2.zip
 server/env_file
+certs/
