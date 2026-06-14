@@ -9,9 +9,3 @@ python-multipart
 PyPDF2
 python-docx
 requests
-# Optional: If you want local model support later
-# torch==2.1.2
-# accelerate==0.26.1
-# bitsandbytes==0.42.0
-
-# lists all the python packages needed for the AI service, including FastAPI for building the API, Uvicorn as the ASGI server, PyTorch and Transformers for handling the AI models, and Requests for making HTTP requests if needed.
