@@ -1,3 +1,10 @@
+# Force CPU-only PyTorch — this server has no GPU.
+# The +cpu pin only exists on the CPU index, so pip physically
+# cannot pull the ~2.5GB of NVIDIA CUDA libraries.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.2.2+cpu
+
 # FastAPI & Server
 fastapi
 uvicorn
