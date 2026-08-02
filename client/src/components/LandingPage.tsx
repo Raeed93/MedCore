@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router';
 import {
   Brain, FileText, Shield, ArrowRight,
-  CheckCircle, Zap, Clock, BarChart3
+  CheckCircle, AlertTriangle, Clock, Layers
 } from 'lucide-react';
 
 const Logo = ({ size = 32 }: { size?: number }) => (
@@ -22,31 +22,62 @@ const Logo = ({ size = 32 }: { size?: number }) => (
 );
 
 const marqueeItems = [
-  "AI-Powered Diagnostics", "HIPAA Compliant", "24/7 Support",
-  "Real-time Analysis", "Clinical Decision Support",
-  "Evidence-Based Medicine", "Advanced Medical AI", "Secure Patient Data"
+  "Retrieval-Augmented Generation", "Symptom Education", "TLS Encrypted",
+  "Cited Sources", "Not a Diagnostic Tool", "Self-Hosted",
+  "Open Source Stack", "Portfolio Project"
 ];
 
-const stats = [
-  { label: "Accuracy Rate", value: "98.7%" },
-  { label: "Diagnoses Daily", value: "15K+" },
-  { label: "Medical Professionals", value: "5,000+" },
-  { label: "Average Response", value: "<30s" },
+// Technical facts about the build — verifiable by reading the repo,
+// unlike usage metrics a portfolio project cannot honestly claim.
+const stack = [
+  { label: "Inference model", value: "Llama 3 70B" },
+  { label: "Vector store", value: "ChromaDB" },
+  { label: "Services", value: "5 containers" },
+  { label: "Embeddings", value: "Local" },
 ];
 
 const features = [
-  { icon: Brain,     title: "RAG-Powered Analysis",    description: "Retrieval-Augmented Generation combines your medical documents with advanced AI models for accurate diagnoses." },
-  { icon: FileText,  title: "Evidence-Based Results",  description: "Every diagnosis includes references to medical literature and guidelines used in the analysis." },
-  { icon: Shield,    title: "Secure & Private",         description: "Patient data is encrypted and handled with HIPAA-compliant security standards at every step." },
-  { icon: Zap,       title: "Intelligent Insights",     description: "Advanced machine learning algorithms provide contextual insights and treatment recommendations." },
-  { icon: Clock,     title: "Real-time Processing",     description: "Get instant diagnostic suggestions with our optimized AI infrastructure." },
-  { icon: BarChart3, title: "Analytics Dashboard",      description: "Track patient outcomes and diagnostic patterns with comprehensive analytics." },
+  {
+    icon: Brain,
+    title: "Retrieval-Augmented Generation",
+    description: "Responses are grounded in a curated library of public health documents rather than model recall alone, which reduces invented detail."
+  },
+  {
+    icon: FileText,
+    title: "Cited Sources",
+    description: "Each response points back to the document it drew from, so you can read the original material yourself."
+  },
+  {
+    icon: AlertTriangle,
+    title: "Urgent Symptom Screening",
+    description: "A deterministic rule set checks for symptoms needing immediate care and shows guidance before any AI response is generated."
+  },
+  {
+    icon: Shield,
+    title: "Encrypted in Transit",
+    description: "All traffic runs over HTTPS with certificates issued by Let's Encrypt and renewed automatically."
+  },
+  {
+    icon: Clock,
+    title: "Visit Preparation",
+    description: "Turns a loose description of how you feel into an organized summary and a list of questions to bring to your appointment."
+  },
+  {
+    icon: Layers,
+    title: "Self-Hosted",
+    description: "Runs entirely on infrastructure you control. No third-party analytics or advertising trackers."
+  },
 ];
 
-const benefits = [
-  "Reduce diagnostic time by 60%", "Minimize human error",
-  "Access to latest medical research", "Comprehensive differential diagnosis",
-  "Integrated test recommendations", "Multi-language support",
+// Engineering work this project demonstrates. Everything here is checkable
+// against the repository.
+const demonstrates = [
+  "Retrieval-augmented generation pipeline",
+  "Containerized multi-service deployment",
+  "JWT authentication with email verification",
+  "Automated TLS certificate renewal",
+  "CI/CD via GitHub Actions",
+  "Local embedding generation",
 ];
 
 export default function LandingPage() {
@@ -65,6 +96,10 @@ export default function LandingPage() {
         .btn-primary:hover { background: #6b1818 !important; }
         .btn-outline:hover { background: rgba(127,29,29,0.06) !important; }
         .nav-link:hover { color: #7F1D1D; }
+        @media (prefers-reduced-motion: reduce) {
+          .marquee-track { animation: none; }
+          .feature-card { transition: none; }
+        }
       `}</style>
 
       {/* ── NAV ── */}
@@ -103,18 +138,19 @@ export default function LandingPage() {
         }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#7F1D1D' }} />
           <span style={{ fontSize: 11, color: '#7F1D1D', fontWeight: 500, letterSpacing: '0.06em' }}>
-            POWERED BY ADVANCED MEDICAL AI
+            PORTFOLIO PROJECT · NOT MEDICAL ADVICE
           </span>
         </div>
 
         <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 54, fontWeight: 700, lineHeight: 1.13, color: '#1a0505', marginBottom: 14 }}>
-          AI-Powered Medical<br />
-          <span style={{ color: '#7F1D1D' }}>Diagnosis System</span>
+          Understand Your Symptoms<br />
+          <span style={{ color: '#7F1D1D' }}>Before You See a Doctor</span>
         </h1>
 
-        <p style={{ fontSize: 17, color: '#5a3a3a', lineHeight: 1.72, maxWidth: 520, margin: '0 auto 40px', fontWeight: 300 }}>
-          Leverage cutting-edge AI and medical knowledge bases to generate evidence-based
-          diagnostic recommendations for your patients.
+        <p style={{ fontSize: 17, color: '#5a3a3a', lineHeight: 1.72, maxWidth: 540, margin: '0 auto 40px', fontWeight: 300 }}>
+          Describe how you're feeling and get plain-language background drawn from public
+          health literature, plus questions worth asking at your appointment.
+          Pulse AI does not diagnose and is not a substitute for a clinician.
         </p>
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -123,33 +159,34 @@ export default function LandingPage() {
             onClick={() => navigate('/login')}
             style={{ background: '#7F1D1D', color: '#faf0f1', border: 'none', padding: '13px 28px', borderRadius: 8, fontSize: 15, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, transition: 'background 0.2s' }}
           >
-            Get Started <ArrowRight size={16} />
+            Try the demo <ArrowRight size={16} />
           </button>
           <button
             className="btn-outline"
+            onClick={() => window.open('https://github.com/Raeed93/MedCore', '_blank', 'noopener,noreferrer')}
             style={{ background: 'transparent', color: '#7F1D1D', border: '1.5px solid #7F1D1D', padding: '12px 28px', borderRadius: 8, fontSize: 15, fontWeight: 500, cursor: 'pointer', transition: 'background 0.2s' }}
           >
-            Watch Demo
+            Read the source
           </button>
         </div>
 
         {/* ECG decorative */}
         <div style={{ margin: '52px auto 0', maxWidth: 480, opacity: 0.15 }}>
-          <svg viewBox="0 0 480 40" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%' }}>
+          <svg viewBox="0 0 480 40" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%' }} aria-hidden="true">
             <path d="M0 20 L80 20 L100 4 L115 36 L130 8 L145 20 L480 20" stroke="#7F1D1D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
       </section>
 
-      {/* ── STATS ── */}
+      {/* ── STACK ── */}
       <section style={{ padding: '0 48px 64px', maxWidth: 860, margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-          {stats.map(({ value, label }) => (
+          {stack.map(({ value, label }) => (
             <div key={label} style={{
               background: '#fff', border: '1px solid rgba(127,29,29,0.1)',
               borderRadius: 12, padding: '24px 20px', textAlign: 'center',
             }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: '#7F1D1D', marginBottom: 4 }}>{value}</div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#7F1D1D', marginBottom: 4 }}>{value}</div>
               <div style={{ fontSize: 12, color: '#7a4a4a', fontWeight: 400 }}>{label}</div>
             </div>
           ))}
@@ -175,10 +212,10 @@ export default function LandingPage() {
       <section style={{ padding: '72px 48px', maxWidth: 960, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 38, fontWeight: 700, color: '#1a0505', marginBottom: 12 }}>
-            Powerful Features
+            How It Works
           </h2>
           <p style={{ fontSize: 15, color: '#7a4a4a', fontWeight: 300 }}>
-            Everything you need for accurate, efficient medical diagnostics
+            Grounded answers, cited sources, and a clear line about what this tool can't do
           </p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
@@ -200,7 +237,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── BENEFITS ── */}
+      {/* ── WHAT THIS DEMONSTRATES ── */}
       <section style={{ padding: '0 48px 72px', maxWidth: 960, margin: '0 auto' }}>
         <div style={{
           background: '#7F1D1D', borderRadius: 16, padding: '52px 56px',
@@ -208,14 +245,16 @@ export default function LandingPage() {
         }}>
           <div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, fontWeight: 700, color: '#faf0f1', marginBottom: 14, lineHeight: 1.3 }}>
-              Why Medical Professionals Choose Us
+              Built to Learn the Full Stack
             </h2>
             <p style={{ fontSize: 14, color: 'rgba(250,240,241,0.65)', fontWeight: 300, lineHeight: 1.7 }}>
-              Join thousands of clinicians who trust Pulse AI for faster, more accurate diagnostic support.
+              Pulse AI is a personal engineering project. The medical framing is the problem
+              domain; the work is in the retrieval pipeline, the deployment, and the security
+              posture around it.
             </p>
           </div>
           <div style={{ display: 'grid', gap: 14 }}>
-            {benefits.map(b => (
+            {demonstrates.map(b => (
               <div key={b} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <CheckCircle size={16} color="rgba(250,240,241,0.7)" style={{ flexShrink: 0 }} />
                 <span style={{ fontSize: 14, color: '#faf0f1', fontWeight: 400 }}>{b}</span>
@@ -225,24 +264,41 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── DISCLAIMER ── */}
+      <section style={{ padding: '0 48px 48px', maxWidth: 960, margin: '0 auto' }}>
+        <div style={{
+          border: '1px solid rgba(127,29,29,0.25)', background: 'rgba(127,29,29,0.04)',
+          borderRadius: 12, padding: '24px 28px', display: 'flex', gap: 16, alignItems: 'flex-start',
+        }}>
+          <AlertTriangle size={20} color="#7F1D1D" style={{ flexShrink: 0, marginTop: 2 }} />
+          <p style={{ fontSize: 13, color: '#5a3a3a', lineHeight: 1.7, fontWeight: 300, margin: 0 }}>
+            <strong style={{ fontWeight: 500, color: '#7F1D1D' }}>This is not medical advice.</strong>{' '}
+            Pulse AI is an educational demonstration and has not been reviewed or cleared by any
+            regulatory body. It cannot diagnose conditions, and its output may be incomplete or
+            wrong. Always consult a qualified healthcare professional. If you think you may be
+            having a medical emergency, contact your local emergency services immediately.
+          </p>
+        </div>
+      </section>
+
       {/* ── CTA ── */}
       <section style={{ padding: '0 48px 80px', maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
         <div style={{ border: '1px solid rgba(127,29,29,0.12)', borderRadius: 16, padding: '60px 48px', background: '#fff' }}>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 36, fontWeight: 700, color: '#1a0505', marginBottom: 12 }}>
-            Ready to Transform Your Practice?
+            Take a Look Under the Hood
           </h2>
           <p style={{ fontSize: 15, color: '#7a4a4a', marginBottom: 36, fontWeight: 300 }}>
-            Join thousands of medical professionals using AI-powered diagnostics
+            Try the demo, or read how the retrieval pipeline and deployment are put together
           </p>
           <button
             className="btn-primary"
             onClick={() => navigate('/login')}
             style={{ background: '#7F1D1D', color: '#faf0f1', border: 'none', padding: '14px 36px', borderRadius: 8, fontSize: 16, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, transition: 'background 0.2s' }}
           >
-            Start Free Trial <ArrowRight size={16} />
+            Try the demo <ArrowRight size={16} />
           </button>
           <p style={{ marginTop: 16, fontSize: 12, color: '#b08080' }}>
-            No credit card required · 14-day free trial · Cancel anytime
+            Free · No payment details required · Educational use only
           </p>
         </div>
       </section>
@@ -250,14 +306,14 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer style={{
         borderTop: '1px solid rgba(127,29,29,0.1)', padding: '28px 48px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Logo size={20} />
-          <span style={{ fontSize: 13, color: '#7a4a4a' }}>© 2024 Pulse AI. Clinical decision support only.</span>
+          <span style={{ fontSize: 13, color: '#7a4a4a' }}>© 2026 Pulse AI. Educational project — not medical advice.</span>
         </div>
         <div style={{ display: 'flex', gap: 24 }}>
-          {['HIPAA Compliant', 'FDA Registered', 'ISO 27001'].map(t => (
+          {['TLS Encrypted', 'Open Source', 'Educational Use Only'].map(t => (
             <span key={t} style={{ fontSize: 12, color: '#b08080' }}>{t}</span>
           ))}
         </div>

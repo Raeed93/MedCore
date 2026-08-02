@@ -30,7 +30,7 @@ const pool = new Pool({
     user: process.env.POSTGRES_USER || 'admin',
     host: process.env.PGHOST || 'db',
     database: process.env.POSTGRES_DB || 'medcore_ai',
-    password: process.env.POSTGRES_PASSWORD || 'password123',
+    password: process.env.POSTGRES_PASSWORD,
     port: 5432,
 });
 

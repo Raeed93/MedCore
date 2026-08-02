@@ -10,8 +10,7 @@ const pool = new Pool({
   port: parseInt(process.env.PGPORT || '5432'),
   database: process.env.POSTGRES_DB || 'medcore_ai',
   user: process.env.POSTGRES_USER || 'admin',
-  password: process.env.POSTGRES_PASSWORD || 'password123',
-});
+  password: process.env.POSTGRES_PASSWORD,});
 
 /**
  * ENDPOINT 1: Send Magic Link
