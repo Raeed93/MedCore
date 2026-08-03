@@ -159,31 +159,20 @@ PATIENT INFORMATION:
 - Medical History: {patient_data.get('history')}
 
 TASK:
-Provide a comprehensive medical assessment in the following format:
+Respond with ONLY a valid JSON object in exactly this shape. No markdown, no tables, no text outside the JSON:
 
-1. PRIMARY DIAGNOSIS (most likely conditions):
-   - List 1-3 most probable diagnoses
+{{
+  "primaryDiagnosis": ["1-3 most probable conditions"],
+  "differentialDiagnosis": ["3-5 alternative conditions to consider"],
+  "recommendedTests": ["specific diagnostic tests or scans"],
+  "urgencyLevel": "low, medium, high, or critical",
+  "recommendations": ["immediate actions, treatment, follow-up care"],
+  "notes": "important considerations and warning signs to monitor"
+}}
 
-2. DIFFERENTIAL DIAGNOSIS (alternative possibilities):
-   - List 3-5 conditions to consider
-
-3. RECOMMENDED TESTS:
-   - List specific diagnostic tests and scans needed
-
-4. URGENCY LEVEL:
-   - Rate as: low, medium, high, or critical
-
-5. CLINICAL RECOMMENDATIONS:
-   - Immediate actions needed
-   - Treatment suggestions
-   - Follow-up care
-
-6. ADDITIONAL NOTES:
-   - Important considerations
-   - Warning signs to monitor
-
-Base your assessment ONLY on the medical literature provided and standard clinical guidelines. Be specific and evidence-based.
+Base your assessment ONLY on the medical literature provided. Be specific and evidence-based.
 """
+        return prompt
         return prompt
     
     def _call_groq_api(self, prompt: str) -> str:
@@ -201,130 +190,34 @@ Base your assessment ONLY on the medical literature provided and standard clinic
                         "content": prompt
                     }
                 ],
-                max_tokens=800,
+                max_tokens=1500,
                 temperature=0.3,
+                response_format={"type": "json_object"}
+
             )
             return response.choices[0].message.content
         except Exception as e:
             print(f"Groq API error: {str(e)}")
-            return self._fallback_diagnosis()
+            raise RuntimeError(f"LLM unavailable: {e}")
     
     def _parse_diagnosis_response(self, diagnosis_text: str, sources: List[Dict]) -> Dict[str, Any]:
-        """
-        Parse the LLM's text response into structured JSON
-        
-        This is a simple parser - can be improved with more sophisticated NLP
-        """
-        # Extract sources used
-        source_files = list(set([
-            doc['metadata'].get('filename', 'Unknown')
-            for doc in sources
-        ]))
-        
-        # Simple parsing logic (you can improve this)
-        lines = diagnosis_text.split('\n')
-        
-        primary_diagnosis = []
-        differential_diagnosis = []
-        recommended_tests = []
-        urgency = "medium"
-        recommendations = []
-        notes = ""
-        
-        current_section = None
-        
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            
-            # Detect sections
-            if "PRIMARY DIAGNOSIS" in line.upper():
-                current_section = "primary"
-            elif "DIFFERENTIAL" in line.upper():
-                current_section = "differential"
-            elif "RECOMMENDED TEST" in line.upper() or "DIAGNOSTIC TEST" in line.upper():
-                current_section = "tests"
-            elif "URGENCY" in line.upper():
-                current_section = "urgency"
-            elif "RECOMMENDATION" in line.upper():
-                current_section = "recommendations"
-            elif "NOTES" in line.upper() or "ADDITIONAL" in line.upper():
-                current_section = "notes"
-            
-            # Extract content
-            elif line.startswith('-') or line.startswith('•') or line[0].isdigit():
-                content = line.lstrip('-•0123456789. ').strip()
-                if not content:
-                    continue
-                
-                if current_section == "primary":
-                    primary_diagnosis.append(content)
-                elif current_section == "differential":
-                    differential_diagnosis.append(content)
-                elif current_section == "tests":
-                    recommended_tests.append(content)
-                elif current_section == "recommendations":
-                    recommendations.append(content)
-            
-            elif current_section == "urgency":
-                if "critical" in line.lower():
-                    urgency = "critical"
-                elif "high" in line.lower():
-                    urgency = "high"
-                elif "low" in line.lower():
-                    urgency = "low"
-                else:
-                    urgency = "medium"
-            
-            elif current_section == "notes":
-                notes += line + " "
-        
-        # Fallback to defaults if parsing failed
-        if not primary_diagnosis:
-            primary_diagnosis = ["Diagnosis pending - requires clinical evaluation"]
-        if not differential_diagnosis:
-            differential_diagnosis = ["Further assessment needed"]
-        if not recommended_tests:
-            recommended_tests = ["Complete physical examination", "Standard blood panel"]
-        if not recommendations:
-            recommendations = ["Schedule follow-up appointment", "Monitor symptoms"]
-        
+        source_files = list(set(d['metadata'].get('filename', 'Unknown') for d in sources))
+        try:
+            data = json.loads(diagnosis_text)
+        except json.JSONDecodeError as e:
+            print(f"JSON parse failed: {e} | raw: {diagnosis_text[:300]}")
+            raise RuntimeError("Malformed model response")
+
         return {
-            "primaryDiagnosis": primary_diagnosis[:3],  # Limit to top 3
-            "differentialDiagnosis": differential_diagnosis[:5],  # Limit to top 5
-            "recommendedTests": recommended_tests[:6],
-            "urgencyLevel": urgency,
-            "recommendations": recommendations[:5],
-            "notes": notes.strip() or "Based on AI analysis of medical literature.",
+            "primaryDiagnosis": data.get("primaryDiagnosis", [])[:3],
+            "differentialDiagnosis": data.get("differentialDiagnosis", [])[:5],
+            "recommendedTests": data.get("recommendedTests", [])[:6],
+            "urgencyLevel": data.get("urgencyLevel", "medium"),
+            "recommendations": data.get("recommendations", [])[:5],
+            "notes": data.get("notes", ""),
             "sources": source_files
         }
     
-    def _fallback_diagnosis(self) -> str:
-        """Fallback response when Groq API fails"""
-        return """
-PRIMARY DIAGNOSIS:
-- Clinical evaluation required
-
-DIFFERENTIAL DIAGNOSIS:
-- Multiple conditions possible
-- Requires physical examination
-
-RECOMMENDED TESTS:
-- Complete blood count (CBC)
-- Comprehensive metabolic panel
-- Vital signs monitoring
-
-URGENCY LEVEL: medium
-
-CLINICAL RECOMMENDATIONS:
-- Schedule in-person examination
-- Monitor symptoms closely
-- Seek immediate care if symptoms worsen
-
-ADDITIONAL NOTES:
-AI service temporarily unavailable. Please conduct standard clinical assessment.
-        """
     
     def get_document_count(self) -> int:
         """Get total number of documents in the vector database"""
