@@ -37,6 +37,8 @@ services:
       - chroma_data:/app/chroma_db
     networks:
       - pulse-network
+    mem_limit: 1500m
+    memswap_limit: 3g
 
   # ── React Client (built as static files) ──
   client:
