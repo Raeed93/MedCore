@@ -67,8 +67,12 @@ class RAGEngine:
             ids.append(chunk_id)
         
         # Generate embeddings
-        embeddings = self.embedder.encode(documents).tolist()
-        
+        batch_size = 8
+        embeddings = []
+        for start in range(0, len(documents), batch_size):
+            batch = documents[start:start + batch_size]
+            embeddings.extend(self.embedder.encode(batch).tolist())
+            print(f"  embedded {min(start + batch_size, len(documents))}/{len(documents)}")        
         # Add to ChromaDB
         self.collection.add(
             documents=documents,

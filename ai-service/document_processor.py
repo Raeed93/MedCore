@@ -133,9 +133,9 @@ class DocumentProcessor:
             
             # Try to break at sentence boundary
             if end < text_length:
-                # Look for sentence endings within the chunk
+                min_end = start + self.chunk_size // 2
                 for punct in ['. ', '.\n', '! ', '?\n']:
-                    last_punct = text.rfind(punct, start, end)
+                    last_punct = text.rfind(punct, min_end, end)
                     if last_punct != -1:
                         end = last_punct + 1
                         break
@@ -145,8 +145,10 @@ class DocumentProcessor:
                 chunks.append(chunk)
             
             # Move start position with overlap
-            start = end - self.chunk_overlap if end < text_length else text_length
-        
+            if end >= text_length:
+                start = text_length
+            else:
+                start = max(end - self.chunk_overlap, start + 1)        
         return chunks
     
     def extract_medical_entities(self, text: str) -> Dict[str, List[str]]:

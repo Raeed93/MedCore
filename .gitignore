@@ -56,3 +56,5 @@ aws/
 awscliv2.zip
 server/env_file
 certs/
+chroma_build/
+ai-service/chroma_db/
