@@ -1,7 +1,7 @@
 # Environment Variables (NEVER COMMIT!)
 .env
 .env.local
-.env.production
+/.env.production
 
 # Node
 node_modules/
@@ -58,3 +58,8 @@ server/env_file
 certs/
 chroma_build/
 ai-service/chroma_db/
+
+__pycache__/
+*.pyc
+*.tar.gz
+/.env.production
