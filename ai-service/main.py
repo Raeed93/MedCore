@@ -155,8 +155,11 @@ async def diagnose_with_rag(patient: PatientInput):
         return diagnosis
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating diagnosis: {str(e)}")
-
+        print(f"Diagnosis generation failed: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="The analysis service is temporarily unavailable. Please try again in a moment."
+        )
 @app.post("/analyze")
 async def analyze_symptoms(input: PatientInput):
     """

@@ -173,7 +173,6 @@ Respond with ONLY a valid JSON object in exactly this shape. No markdown, no tab
 Base your assessment ONLY on the medical literature provided. Be specific and evidence-based.
 """
         return prompt
-        return prompt
     
     def _call_groq_api(self, prompt: str) -> str:
         """Call Groq API - fast, free, reliable"""

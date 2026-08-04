@@ -140,18 +140,15 @@ app.post('/diagnose', async (req: Request, res: Response) => {
     res.json(response.data);
     } catch (error) {
         console.error('Error calling AI service:', error);
-        
-        if (axios.isAxiosError(error)) {
-            res.status(error.response?.status || 500).json({
-                error: 'AI service error',
-                message: error.response?.data?.detail || error.message
-            });
-        } else {
-            res.status(500).json({
-                error: 'Server error',
-                message: error instanceof Error ? error.message : 'Unknown error'
-            });
-        }
+
+        const status = axios.isAxiosError(error) ? (error.response?.status ?? 503) : 500;
+
+        res.status(status).json({
+            error: 'Diagnosis unavailable',
+            message: status === 503
+                ? 'The analysis service is temporarily unavailable. Please try again in a moment.'
+                : 'Something went wrong generating the assessment. Please try again.'
+        });
     }
 });
 

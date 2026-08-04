@@ -70,7 +70,8 @@ export default function PatientManager() {
         sources: data.sources || [],
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect to AI service. Please ensure the server is running.');
+     setResult(null);
+      setError(err instanceof Error ? err.message : 'Could not reach the analysis service. Please try again.');
     } finally {
       setIsLoading(false);
     }
