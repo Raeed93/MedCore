@@ -1,123 +1,166 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { Pool } from 'pg';
 import axios from 'axios';
 import multer from 'multer';
 import FormData from 'form-data';
 import fs from 'fs';
-import path from 'path';
-import cookieParser from 'cookie-parser';  
-import authRoutes from './routes/auth.routes'; 
-import jwt from 'jsonwebtoken';
+import cookieParser from 'cookie-parser';
+import authRoutes from './routes/auth.routes';
+import { requireAuth } from './middleware/auth.middleware';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// ============================================
+// STARTUP CONFIG CHECKS
+// ============================================
+// Fail fast and loudly. A silent fallback in production is worse than a crash:
+// the app keeps serving requests while being subtly wrong, which is exactly how
+// the CORS_ORIGIN and POSTGRES_DB problems stayed hidden.
+
+if (process.env.NODE_ENV === 'production') {
+  const required = ['JWT_SECRET', 'CORS_ORIGIN', 'FRONTEND_URL', 'POSTGRES_PASSWORD'];
+  const missing = required.filter(key => !process.env[key]);
+
+  if (missing.length > 0) {
+    console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+}
+
+// ============================================
+// MIDDLEWARE
+// ============================================
+
+// CORS_ORIGIN accepts a comma-separated list so dev and prod no longer fight
+// over a single value. Note this is an allowlist, not a wildcard — with
+// credentials enabled, the spec forbids "Access-Control-Allow-Origin: *".
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',  // Frontend URL
-  credentials: true,  // (allows cookies)
+  origin: (origin, callback) => {
+    // Requests with no Origin header (curl, health checks, server-to-server)
+    // are not browser requests, so CORS does not apply to them.
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    console.warn(`⚠️  Blocked CORS request from origin: ${origin}`);
+    return callback(new Error('Origin not allowed'));
+  },
+  credentials: true,
 }));
+
 app.use(express.json());
-app.use(cookieParser());  
-app.use('/auth', authRoutes); 
+app.use(cookieParser());
+app.use('/auth', authRoutes);
 
 // File upload configuration
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB per file
+});
 
-// Database Connection
+// ============================================
+// DATABASE
+// ============================================
+
 const pool = new Pool({
-    user: process.env.POSTGRES_USER || 'admin',
-    host: process.env.PGHOST || 'db',
-    database: process.env.POSTGRES_DB || 'medcore_ai',
-    password: process.env.POSTGRES_PASSWORD,
-    port: 5432,
+  user: process.env.POSTGRES_USER || 'admin',
+  host: process.env.PGHOST || 'db',
+  database: process.env.POSTGRES_DB || 'medcore_ai',
+  password: process.env.POSTGRES_PASSWORD || 'password123',
+  port: 5432,
 });
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://ai-service:8000';
 
-// ============================================
-// BASIC ROUTES
-// ============================================
+// Only expose internal error details outside production.
+const isDev = process.env.NODE_ENV !== 'production';
+const detail = (error: unknown) =>
+  isDev ? (error instanceof Error ? error.message : String(error)) : undefined;
 
-app.get('/', (req: Request, res: Response) => {
-    res.send('Pulse AI Backend is Running! 🏥');
+// ============================================
+// PUBLIC ROUTES
+// ============================================
+// Everything below this section requires authentication. These three do not:
+// "/" and "/health" are monitoring targets (UptimeRobot polls /health), and
+// /auth/* is how a caller obtains a token in the first place.
+
+app.get('/', (_req: Request, res: Response) => {
+  res.send('MedCore Backend is Running! 🏥');
 });
 
-app.get('/health', async (req: Request, res: Response) => {
-    try {
-        // Check database connection
-        await pool.query('SELECT 1');
-        
-        // Check AI service
-        const aiHealth = await axios.get(`${AI_SERVICE_URL}/health`);
-        
-        res.json({
-            status: 'healthy',
-            database: 'connected',
-            ai_service: aiHealth.data,
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        res.status(500).json({
-            status: 'unhealthy',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        });
-    }
+app.get('/health', async (_req: Request, res: Response) => {
+  try {
+    await pool.query('SELECT 1');
+    const aiHealth = await axios.get(`${AI_SERVICE_URL}/health`);
+
+    res.json({
+      status: 'healthy',
+      database: 'connected',
+      ai_service: aiHealth.data,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('❌ Health check failed:', error);
+    res.status(500).json({
+      status: 'unhealthy',
+      error: detail(error),
+    });
+  }
 });
 
 // ============================================
-// PATIENT MANAGEMENT ROUTES
+// ADMIN / DEBUG ROUTES
 // ============================================
 
-// Get all patients
-app.get('/patients', async (req: Request, res: Response) => {
-    try {
-        const result = await pool.query('SELECT * FROM patients ORDER BY created_at DESC');
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
-    }
-});
+/**
+ * Lists registered users.
+ *
+ * This was previously unauthenticated and ran `SELECT *`, which returned every
+ * user's email, location, hospital and licence number to any caller. It is now
+ * authenticated, column-limited, and disabled in production.
+ *
+ * There is no legitimate consumer-product use for "list all users" — nothing in
+ * the client calls this. Delete it once you no longer need it for local
+ * debugging. A debug route that survives to production is how the original bug
+ * happened.
+ */
+app.get('/patients', requireAuth, async (_req: Request, res: Response) => {
+  if (!isDev) {
+    return res.status(404).json({ message: 'Not found' });
+  }
 
-// Add new patient
-app.post('/patients', async (req: Request, res: Response) => {
-    try {
-        const { name, age, condition } = req.body;
-        const newPatient = await pool.query(
-            'INSERT INTO patients (name, age, condition) VALUES ($1, $2, $3) RETURNING *',
-            [name, age, condition]
-        );
-        res.json(newPatient.rows[0]);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
-    }
+  try {
+    const result = await pool.query(
+      'SELECT id, name, email, created_at FROM patients ORDER BY created_at DESC LIMIT 100'
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('❌ GET /patients failed:', error);
+    res.status(500).json({ error: 'Server error', message: detail(error) });
+  }
 });
 
 // ============================================
 // AI DIAGNOSIS ROUTES
 // ============================================
 
-// Generate diagnosis using RAG
-app.post('/diagnose', async (req: Request, res: Response) => {
+/**
+ * Generate a symptom assessment via the RAG service.
+ *
+ * Identity comes from the verified token only. The previous implementation fell
+ * back to `req.body.patientId` when the token was missing or invalid, which
+ * meant an unauthenticated caller could write records under any patient_id and
+ * consume LLM inference for free.
+ */
+app.post('/diagnose', requireAuth, async (req: Request, res: Response) => {
   try {
-    // Get authenticated user's real ID from cookie
-    const token = req.cookies?.auth_token;
-    let realPatientId = req.body.patientId; // fallback
-
-    if (token) {
-      try {
-        const decoded = jwt.verify(
-          token,
-          process.env.JWT_SECRET || 'fallback-secret-change-me'
-        ) as { patientId: number };
-        realPatientId = decoded.patientId; // use real integer ID
-      } catch {
-        // token invalid, continue with form value
-      }
-    }
+    const patientId = req.user!.patientId;
 
     const response = await axios.post(
       `${AI_SERVICE_URL}/diagnose-rag`,
@@ -126,156 +169,149 @@ app.post('/diagnose', async (req: Request, res: Response) => {
     );
 
     await pool.query(
-      `INSERT INTO diagnosis_history 
-       (patient_id, symptoms, diagnosis_result, created_at) 
+      `INSERT INTO diagnosis_history
+       (patient_id, symptoms, diagnosis_result, created_at)
        VALUES ($1, $2, $3, $4)`,
       [
-        String(realPatientId),
+        String(patientId),
         req.body.symptoms,
         JSON.stringify(response.data),
-        new Date()
+        new Date(),
       ]
     );
 
     res.json(response.data);
-    } catch (error) {
-        console.error('Error calling AI service:', error);
+  } catch (error) {
+    console.error('❌ POST /diagnose failed:', error);
 
-        const status = axios.isAxiosError(error) ? (error.response?.status ?? 503) : 500;
-
-        res.status(status).json({
-            error: 'Diagnosis unavailable',
-            message: status === 503
-                ? 'The analysis service is temporarily unavailable. Please try again in a moment.'
-                : 'Something went wrong generating the assessment. Please try again.'
-        });
+    if (axios.isAxiosError(error)) {
+      res.status(error.response?.status || 500).json({
+        error: 'AI service error',
+        message: error.response?.data?.detail || error.message,
+      });
+    } else {
+      res.status(500).json({ error: 'Server error', message: detail(error) });
     }
+  }
 });
 
-// Legacy endpoint (backward compatibility)
-app.post('/ask-ai', async (req: Request, res: Response) => {
-    try {
-        const response = await axios.post(`${AI_SERVICE_URL}/analyze`, req.body);
-        res.json(response.data);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error connecting to AI Service');
-    }
+// Legacy passthrough to the AI service. Authenticated to stop anonymous callers
+// burning inference quota. Remove once nothing depends on it.
+app.post('/ask-ai', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const response = await axios.post(`${AI_SERVICE_URL}/analyze`, req.body);
+    res.json(response.data);
+  } catch (error) {
+    console.error('❌ POST /ask-ai failed:', error);
+    res.status(500).json({ error: 'Error connecting to AI Service', message: detail(error) });
+  }
 });
 
 // ============================================
 // DOCUMENT MANAGEMENT ROUTES (RAG)
 // ============================================
 
-// Upload medical documents to RAG system
-app.post('/upload-documents', upload.array('documents', 10), async (req: Request, res: Response) => {
+/**
+ * Upload documents into the RAG corpus.
+ *
+ * NOTE the middleware order: requireAuth runs BEFORE upload.array(), so multer
+ * never writes a file to disk for an unauthenticated caller.
+ *
+ * Authentication is the floor here, not the ceiling. Any registered user can
+ * currently add documents that the RAG engine will retrieve and cite as medical
+ * sources — corpus poisoning. Once the `role` column exists, gate this on
+ * role = 'admin'.
+ */
+app.post(
+  '/upload-documents',
+  requireAuth,
+  upload.array('documents', 10),
+  async (req: Request, res: Response) => {
+    const files = Array.isArray(req.files) ? req.files : [];
+
     try {
-        if (!req.files || !Array.isArray(req.files)) {
-            return res.status(400).json({ error: 'No files uploaded' });
-        }
-        
-        const formData = new FormData();
-        
-        // Append each file to FormData
-        for (const file of req.files) {
-            formData.append('files', fs.createReadStream(file.path), {
-                filename: file.originalname,
-                contentType: file.mimetype
-            });
-        }
-        
-        // Send to AI service
-        const response = await axios.post(
-            `${AI_SERVICE_URL}/upload-documents`,
-            formData,
-            {
-                headers: formData.getHeaders(),
-                timeout: 300000 // 5 minute timeout for large files
-            }
-        );
-        
-        // Clean up temporary files
-        for (const file of req.files) {
-            fs.unlinkSync(file.path);
-        }
-        
-        res.json(response.data);
-    } catch (error) {
-        console.error('Error uploading documents:', error);
-        res.status(500).json({
-            error: 'Upload failed',
-            message: error instanceof Error ? error.message : 'Unknown error'
+      if (files.length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
+      }
+
+      const formData = new FormData();
+      for (const file of files) {
+        formData.append('files', fs.createReadStream(file.path), {
+          filename: file.originalname,
+          contentType: file.mimetype,
         });
+      }
+
+      const response = await axios.post(
+        `${AI_SERVICE_URL}/upload-documents`,
+        formData,
+        {
+          headers: formData.getHeaders(),
+          timeout: 300000, // 5 minutes for large files
+        }
+      );
+
+      res.json(response.data);
+    } catch (error) {
+      console.error('❌ POST /upload-documents failed:', error);
+      res.status(500).json({ error: 'Upload failed', message: detail(error) });
+    } finally {
+      // Previously this only ran on success, so a failed upload left temp files
+      // behind indefinitely.
+      for (const file of files) {
+        fs.promises.unlink(file.path).catch(() => { /* already gone */ });
+      }
     }
+  }
+);
+
+app.get('/documents', requireAuth, async (_req: Request, res: Response) => {
+  try {
+    const response = await axios.get(`${AI_SERVICE_URL}/documents`);
+    res.json(response.data);
+  } catch (error) {
+    console.error('❌ GET /documents failed:', error);
+    res.status(500).json({ error: 'Failed to fetch documents', message: detail(error) });
+  }
 });
 
-// List all indexed documents
-app.get('/documents', async (req: Request, res: Response) => {
-    try {
-        const response = await axios.get(`${AI_SERVICE_URL}/documents`);
-        res.json(response.data);
-    } catch (error) {
-        console.error('Error fetching documents:', error);
-        res.status(500).json({
-            error: 'Failed to fetch documents',
-            message: error instanceof Error ? error.message : 'Unknown error'
-        });
-    }
-});
-
-// Delete a document from RAG system
-app.delete('/documents/:documentId', async (req: Request, res: Response) => {
-    try {
-        const { documentId } = req.params;
-        const response = await axios.delete(`${AI_SERVICE_URL}/documents/${documentId}`);
-        res.json(response.data);
-    } catch (error) {
-        console.error('Error deleting document:', error);
-        res.status(500).json({
-            error: 'Failed to delete document',
-            message: error instanceof Error ? error.message : 'Unknown error'
-        });
-    }
+app.delete('/documents/:documentId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { documentId } = req.params;
+    const response = await axios.delete(
+      `${AI_SERVICE_URL}/documents/${encodeURIComponent(documentId)}`
+    );
+    res.json(response.data);
+  } catch (error) {
+    console.error('❌ DELETE /documents failed:', error);
+    res.status(500).json({ error: 'Failed to delete document', message: detail(error) });
+  }
 });
 
 // ============================================
 // DIAGNOSIS HISTORY ROUTES
 // ============================================
 
-// Get diagnosis history for a patient
-app.get('/diagnosis-history/:patientId', async (req: Request, res: Response) => {
-    try {
-        const { patientId } = req.params;
-        const result = await pool.query(
-            'SELECT * FROM diagnosis_history WHERE patient_id = $1 ORDER BY created_at DESC',
-            [patientId]
-        );
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
-    }
-});
+// REMOVED: app.get('/diagnosis-history/:patientId', ...)
+//
+// That route took an identity from the URL and returned that identity's private
+// symptom history, with no authentication — an Insecure Direct Object
+// Reference. Anyone could read any user's health records by iterating integers.
+//
+// It is deleted rather than patched because the authenticated route below
+// already does the job, and nothing in the client called it.
 
-// Get all diagnosis history
-app.get('/diagnosis-history', async (req: Request, res: Response) => {
+app.get('/diagnosis-history', requireAuth, async (req: Request, res: Response) => {
   try {
-    const token = req.cookies?.auth_token;
-    if (!token) return res.status(401).json({ message: 'Not authenticated' });
-
-    const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-me';
-    const decoded = jwt.verify(token, JWT_SECRET) as { patientId: number };
-
     const result = await pool.query(
-    `SELECT id, patient_id, symptoms, diagnosis_result, created_at
-    FROM diagnosis_history
-    WHERE patient_id = $1::text
-    ORDER BY created_at DESC
-    LIMIT 50`,
-    [String(decoded.patientId)]
+      `SELECT id, patient_id, symptoms, diagnosis_result, created_at
+       FROM diagnosis_history
+       WHERE patient_id = $1::text
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [String(req.user!.patientId)]
     );
 
-    // Parse the JSON stored in diagnosis_result
     const rows = result.rows.map(row => ({
       ...row,
       diagnosis_result: typeof row.diagnosis_result === 'string'
@@ -284,10 +320,30 @@ app.get('/diagnosis-history', async (req: Request, res: Response) => {
     }));
 
     res.json({ success: true, history: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server Error' });
+  } catch (error) {
+    console.error('❌ GET /diagnosis-history failed:', error);
+    res.status(500).json({ message: 'Server Error', detail: detail(error) });
   }
+});
+
+// ============================================
+// ERROR HANDLING
+// ============================================
+
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ message: 'Not found' });
+});
+
+// Four arguments marks this as Express's error handler — the `next` parameter
+// is required for that signature even though it is unused.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  if (err.message === 'Origin not allowed') {
+    return res.status(403).json({ message: 'Origin not allowed' });
+  }
+
+  console.error('❌ Unhandled error:', err);
+  res.status(500).json({ message: 'Server error', detail: detail(err) });
 });
 
 // ============================================
@@ -295,6 +351,7 @@ app.get('/diagnosis-history', async (req: Request, res: Response) => {
 // ============================================
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`🤖 AI Service URL: ${AI_SERVICE_URL}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🤖 AI Service URL: ${AI_SERVICE_URL}`);
+  console.log(`🔒 Allowed origins: ${allowedOrigins.join(', ')}`);
 });
