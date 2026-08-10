@@ -65,7 +65,7 @@ export default function PatientManager() {
         primaryDiagnosis: data.primaryDiagnosis || [],
         differentialDiagnosis: data.differentialDiagnosis || [],
         recommendedTests: data.recommendedTests || [],
-        urgencyLevel: data.urgencyLevel || 'medium',
+        urgencyLevel: data.urgencyLevel || 'umknown',
         recommendations: data.recommendations || [],
         notes: data.notes || '',
         sources: data.sources || [],
