@@ -10,7 +10,7 @@ export interface DiagnosisResult {
   recommendations: string[];
   notes: string;
   sources?: string[];
-  noRelevantContext?: boolean;
+  groundedInLiterature?: boolean; 
 }
 
 interface DiagnosisResultsProps {
@@ -84,63 +84,7 @@ export function DiagnosisResults({ result, onClose }: DiagnosisResultsProps) {
   // ── No relevant literature ────────────────────────────────────────────────
   // Rendered as its own view rather than the normal layout with empty sections.
   // A row of blank headings reads as a broken page; this reads as an answer.
-  if (result.noRelevantContext) {
-    return (
-      <div className="rounded-2xl p-6 md:p-8 flex flex-col gap-5"
-        style={{ ...frosted, fontFamily: "'DM Sans', sans-serif" }}>
-        {fontImport}
-
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="dr-serif font-bold mb-1" style={{ fontSize: 20, color: '#2a0a0a' }}>
-              No information available
-            </h2>
-            <p className="text-xs font-light" style={{ color: '#8a5050' }}>
-              This tool could not find relevant material on these symptoms
-            </p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg" style={closeButtonStyle}>
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="flex gap-3.5 px-4 py-4 rounded-xl"
-          style={{ background: 'rgba(127,29,29,0.04)', border: '1px solid rgba(127,29,29,0.1)' }}>
-          <BookOpen size={16} color="#7F1D1D" className="flex-shrink-0 mt-0.5" />
-          <p className="text-sm font-light leading-relaxed" style={{ color: '#5a3a3a' }}>
-            {result.notes}
-          </p>
-        </div>
-
-        {result.recommendations.length > 0 && (
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#7F1D1D' }}>
-              What to do next
-            </h3>
-            <div className="flex flex-col gap-2">
-              {result.recommendations.map((rec, i) => (
-                <div key={i} className="flex items-start gap-3 text-sm" style={{ color: '#3a1a1a' }}>
-                  <span className="font-medium mt-0.5 flex-shrink-0" style={{ color: '#7F1D1D' }}>→</span>
-                  <span className="font-light leading-relaxed">{rec}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* No sources section at all — an empty citation list is better than a
-            heading implying sources exist. */}
-
-        <div className="pt-4 flex items-start gap-2" style={{ borderTop: '1px solid rgba(127,29,29,0.08)' }}>
-          <AlertTriangle size={12} color="#9a6060" className="flex-shrink-0 mt-0.5" />
-          <p className="text-xs font-light italic leading-relaxed" style={{ color: '#9a6060' }}>
-            This tool provides general health education only. It does not diagnose or treat.
-            Always consult a licensed clinician about your health.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  
 
   // ── Normal result ─────────────────────────────────────────────────────────
   const urgency = urgencyConfig[result.urgencyLevel] || urgencyConfig.unknown;
@@ -177,7 +121,24 @@ export function DiagnosisResults({ result, onClose }: DiagnosisResultsProps) {
           </p>
         </div>
       </div>
-
+      {/* Provenance — the reader must be able to tell which kind of answer
+          this is without reading to the bottom of the page. */}
+      {result.groundedInLiterature === false && (
+        <div className="flex gap-3 px-4 py-3 rounded-xl"
+          style={{ background: 'rgba(122,74,74,0.06)', border: '1px solid rgba(122,74,74,0.22)' }}>
+          <BookOpen size={15} color="#7a4a4a" className="flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-semibold mb-1" style={{ color: '#5a3a3a' }}>
+              Not based on the medical library
+            </p>
+            <p className="text-xs font-light leading-relaxed" style={{ color: '#7a4a4a' }}>
+              Nothing in the indexed documents covered these symptoms, so this is
+              general information rather than something drawn from a specific source.
+              Treat it as a starting point for a conversation with a clinician.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Primary Diagnosis */}
       {result.primaryDiagnosis.length > 0 && (
         <div>

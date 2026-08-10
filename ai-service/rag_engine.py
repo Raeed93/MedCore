@@ -165,98 +165,111 @@ class RAGEngine:
 
     def generate_diagnosis(self, patient_data: Dict[str, Any], context_docs: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Generate diagnosis using Groq API with RAG context
+        Generate an assessment.
 
-        Args:
-            patient_data: Patient information from the form
-            context_docs: Relevant medical document chunks
-
-        Returns:
-            Structured diagnosis response
+        With relevant literature, the answer is grounded in it and cites it.
+        Without, we fall back to the model's general knowledge — clearly flagged,
+        and with no citations attached.
         """
-        # Nothing cleared the relevance threshold. Do NOT call the LLM here: with
-        # no supporting literature it would answer from its own training, and the
-        # output would be indistinguishable to the reader from a literature-backed
-        # one. Saying plainly that we have nothing reliable is the correct answer.
         if not context_docs:
-            print("No context above relevance threshold — returning no-information response")
-            return self._no_context_response()
+            print("No context above relevance threshold — falling back to general knowledge")
+            return self._general_knowledge_response(patient_data)
 
-        # Build context from retrieved documents
         context_text = "\n\n".join([
             f"Source: {doc['metadata'].get('filename', 'Unknown')}\n{doc['text']}"
             for doc in context_docs
         ])
 
-        # Build the prompt
         prompt = self._build_medical_prompt(patient_data, context_text)
-
-        # Call Groq API
         diagnosis_text = self._call_groq_api(prompt)
 
-        # Parse the response into structured format
-        parsed_diagnosis = self._parse_diagnosis_response(diagnosis_text, context_docs)
+        parsed = self._parse_diagnosis_response(diagnosis_text, context_docs)
+        parsed["groundedInLiterature"] = True
+        return parsed
 
-        return parsed_diagnosis
-
-    def _no_context_response(self) -> Dict[str, Any]:
+    def _general_knowledge_response(self, patient_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Returned when nothing in the knowledge base is close enough to the query.
+        Answer from the model's own knowledge when the library has nothing relevant.
 
-        Note the empty sources list. The failure this exists to prevent is citing
-        a document that was retrieved but is not actually relevant — worse than
-        citing nothing, because the citation makes an unsupported answer look
-        sourced.
+        Note the empty sources list — passing [] to the parser guarantees it.
+        The caller must never be able to mistake this for a literature-backed
+        answer, which is why the flag is set explicitly rather than left to a
+        default.
         """
-        return {
-            "primaryDiagnosis": [],
-            "differentialDiagnosis": [],
-            "recommendedTests": [],
-            "urgencyLevel": "unknown",
-            "recommendations": [
-                "Describe these symptoms to a doctor, pharmacist, or nurse.",
-                "Seek urgent care if symptoms are severe or worsening quickly.",
-            ],
-            "notes": (
-                "The medical literature available to this tool does not cover the "
-                "symptoms described, so no explanation can be given here. This is "
-                "not a sign that the symptoms are unimportant — only that this tool "
-                "has nothing reliable to say about them. Please speak to a "
-                "healthcare professional."
-            ),
-            "sources": [],
-            "noRelevantContext": True,
-        }
+        prompt = self._build_general_prompt(patient_data)
+        text = self._call_groq_api(prompt)
 
+        parsed = self._parse_diagnosis_response(text, [])   # [] → sources = []
+        parsed["groundedInLiterature"] = False
+        return parsed
+
+    def _build_general_prompt(self, patient_data: Dict[str, Any]) -> str:
+        """
+        Prompt used when there is no retrieved literature.
+
+        Deliberately more cautious than the grounded prompt: no specific test
+        recommendations, and an explicit instruction not to imply sourcing.
+        """
+        return f"""You are a health education assistant helping someone prepare to see a doctor.
+
+        You do NOT have access to reference literature for this question. Answer from general
+        medical knowledge, and stay conservative: describe what these symptoms commonly relate
+        to, in plain language a non-specialist can follow. Do not cite sources, do not name
+        studies, and do not imply your answer is drawn from any specific document.
+
+        PERSON'S INFORMATION:
+        - Age: {patient_data.get('age')}
+        - Gender: {patient_data.get('gender')}
+        - Symptoms: {patient_data.get('symptoms')}
+        - Duration: {patient_data.get('duration')}
+        - Relevant history: {patient_data.get('history')}
+
+        Respond with ONLY a valid JSON object in exactly this shape. No markdown, no text
+        outside the JSON:
+
+        {{
+        "primaryDiagnosis": ["1-3 conditions these symptoms commonly relate to"],
+        "differentialDiagnosis": ["2-4 other possibilities worth mentioning to a doctor"],
+        "recommendedTests": [],
+        "urgencyLevel": "low, medium, high, or critical",
+        "recommendations": ["what to do next, including when to seek urgent care"],
+        "notes": "questions worth asking a doctor, and warning signs to watch for"
+        }}
+
+        Leave recommendedTests empty — ordering tests is a clinician's decision, not something
+        to suggest without examination.
+        """
+
+    
     def _build_medical_prompt(self, patient_data: Dict[str, Any], context: str) -> str:
         """Build a structured prompt for the medical LLM"""
 
         prompt = f"""You are a medical AI assistant. Based on the provided medical literature and patient information, generate a differential diagnosis.
 
-MEDICAL CONTEXT FROM LITERATURE:
-{context}
+        MEDICAL CONTEXT FROM LITERATURE:
+        {context}
 
-PATIENT INFORMATION:
-- Age: {patient_data.get('age')} years old
-- Gender: {patient_data.get('gender')}
-- Chief Complaint & Symptoms: {patient_data.get('symptoms')}
-- Duration: {patient_data.get('duration')}
-- Medical History: {patient_data.get('history')}
+        PATIENT INFORMATION:
+        - Age: {patient_data.get('age')} years old
+        - Gender: {patient_data.get('gender')}
+        - Chief Complaint & Symptoms: {patient_data.get('symptoms')}
+        - Duration: {patient_data.get('duration')}
+        - Medical History: {patient_data.get('history')}
 
-TASK:
-Respond with ONLY a valid JSON object in exactly this shape. No markdown, no tables, no text outside the JSON:
+        TASK:
+        Respond with ONLY a valid JSON object in exactly this shape. No markdown, no tables, no text outside the JSON:
 
-{{
-  "primaryDiagnosis": ["1-3 most probable conditions"],
-  "differentialDiagnosis": ["3-5 alternative conditions to consider"],
-  "recommendedTests": ["specific diagnostic tests or scans"],
-  "urgencyLevel": "low, medium, high, or critical",
-  "recommendations": ["immediate actions, treatment, follow-up care"],
-  "notes": "important considerations and warning signs to monitor"
-}}
+        {{
+        "primaryDiagnosis": ["1-3 most probable conditions"],
+        "differentialDiagnosis": ["3-5 alternative conditions to consider"],
+        "recommendedTests": ["specific diagnostic tests or scans"],
+        "urgencyLevel": "low, medium, high, or critical",
+        "recommendations": ["immediate actions, treatment, follow-up care"],
+        "notes": "important considerations and warning signs to monitor"
+        }}
 
-Base your assessment ONLY on the medical literature provided. Be specific and evidence-based.
-"""
+        Base your assessment ONLY on the medical literature provided. Be specific and evidence-based.
+        """
         return prompt
 
     def _call_groq_api(self, prompt: str) -> str:

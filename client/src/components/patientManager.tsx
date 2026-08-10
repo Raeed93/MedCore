@@ -65,12 +65,11 @@ export default function PatientManager() {
         primaryDiagnosis: data.primaryDiagnosis || [],
         differentialDiagnosis: data.differentialDiagnosis || [],
         recommendedTests: data.recommendedTests || [],
-        urgencyLevel: data.urgencyLevel || 'umknown',
+        urgencyLevel: data.urgencyLevel || 'unknown',
         recommendations: data.recommendations || [],
         notes: data.notes || '',
         sources: data.sources || [],
-        noRelevantContext: data.noRelevantContext || false,   
-
+        groundedInLiterature: data.groundedInLiterature !== false,
       });
     } catch (err) {
      setResult(null);

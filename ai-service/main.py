@@ -57,6 +57,10 @@ class DiagnosisResponse(BaseModel):
     notes: str
     sources: List[str]  # Which medical documents were used
 
+    # False means the answer came from the model's general knowledge because
+    # nothing in the indexed literature was relevant. Defaults to True so an
+    # older client that ignores the field still behaves sensibly.
+    groundedInLiterature: bool = True
 # ============================================
 # API ENDPOINTS
 # Think of endpoints as different buttons you can press to make the AI service do different things.
