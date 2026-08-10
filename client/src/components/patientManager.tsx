@@ -49,6 +49,7 @@ export default function PatientManager() {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/diagnose`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           patientId: formData.patientId, age: parseInt(formData.age),
           gender: formData.gender, symptoms: formData.symptoms,
@@ -68,6 +69,8 @@ export default function PatientManager() {
         recommendations: data.recommendations || [],
         notes: data.notes || '',
         sources: data.sources || [],
+        noRelevantContext: data.noRelevantContext || false,   
+
       });
     } catch (err) {
      setResult(null);
