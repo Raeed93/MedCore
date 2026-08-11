@@ -53,7 +53,8 @@ services:
       - CHROMA_COLLECTION_NAME=medical_documents
       - GROQ_MODEL=${GROQ_MODEL}
       - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-
+      - RAG_MAX_DISTANCE=${RAG_MAX_DISTANCE}
+      
   # 4. React Client (The Face)
   client:
     build: ./client
