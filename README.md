@@ -1,6 +1,5 @@
-# 🏥 MedCore AI - Medical Diagnosis RAG System
-
-> AI-powered clinical decision support system using Retrieval-Augmented Generation (RAG) and BioMistral-7B
+# 🏥 Pulse AI - Symptom Education RAG System
+> Retrieval-augmented symptom education. Describe how you feel in plain language and get background drawn from public health literature, with every source cited
 
 ![System Status](https://img.shields.io/badge/status-development-yellow)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -11,18 +10,18 @@
 
 ## 🌟 Features
 
-- ✅ **RAG-Based Diagnosis**: AI analyzes patient symptoms using your medical knowledge base
-- ✅ **Document Upload**: Index clinical guidelines, textbooks, and protocols
-- ✅ **Source Citation**: Every diagnosis shows which medical documents were used
-- ✅ **Real-time Analysis**: Powered by HuggingFace BioMistral-7B model
-- ✅ **Beautiful UI**: Modern glassmorphism design with React + Tailwind
-- ✅ **Docker-Ready**: One command to start all services
-- ✅ **HIPAA-Compliant Ready**: Local deployment option for sensitive data
+- ✅ Grounded Generation: Answers are built from a curated corpus of public health documents (NIH, CDC, NIAMS) rather than model recall alone
+- ✅ Distance-Thresholded Retrieval: Chunks beyond RAG_MAX_DISTANCE are discarded before the model sees them
+- ✅ Honest Fallback: When nothing in the corpus is close enough, the response is flagged as general knowledge instead of being passed off as sourced
+- ✅ Source Citation: Every response lists the documents it drew from
+- ✅ Loud Failures: A failed inference call returns a 503 — never plausible-looking substitute text
+- ✅ Passwordless Auth: Single-use emailed sign-in links, valid 15 minutes, no password stored
+- ✅ Local Embeddings: Document text never leaves the host to be embedded
+- ✅ Docker-Ready: One command brings up the whole stack
 
 ---
 
 ## 🏗️ Architecture
-
 ```
 ┌─────────────────┐
 │  React Client   │ ← Beautiful UI with diagnosis forms
@@ -44,115 +43,35 @@
                       │  │HuggingFace│ ← BioMistral-7B
                       │  └─────────┘  │
                       └───────────────┘
-```
 
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Docker & Docker Compose
-- HuggingFace Account (free)
-
-### 1. Clone & Configure
-
-```bash
-git clone https://github.com/yourusername/medcore-ai.git
-cd medcore-ai
-
-# Copy environment template
-cp .env.example .env
-
-# Add your HuggingFace token to .env
-# Get token from: https://huggingface.co/settings/tokens
-```
-
-### 2. Start Services
-
-```bash
-docker-compose up --build
-```
-
-Wait 30 seconds for all services to start, then visit:
-- **Client**: http://localhost:5173
-- **API**: http://localhost:3000/health
-- **AI Service**: http://localhost:8000
-
-### 3. Upload Medical Documents
-
-```bash
-curl -X POST http://localhost:3000/upload-documents \
-  -F "documents=@./your_medical_guideline.pdf"
-```
-
-### 4. Start Diagnosing!
-
-Go to http://localhost:5173 and click "Start New Diagnosis"
-
----
-
-## 📚 Documentation
-
-- [Complete Setup Guide](./SETUP_GUIDE.md) - Detailed installation & usage
-- [API Reference](./API_REFERENCE.md) - All endpoints documented
-- [Architecture Deep Dive](./ARCHITECTURE.md) - System design details
-
----
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **React 19** + TypeScript
-- **Vite** - Build tool
-- **Tailwind CSS** - Styling
-- **Lucide Icons** - UI icons
+React 19 + TypeScript
+Vite - Build tool
+Tailwind CSS v4 - Styling, with a CSS-variable token system
+Lucide Icons - UI icons
 
 ### Backend
-- **Node.js 22** + Express + TypeScript
-- **PostgreSQL 15** - Database
-- **Multer** - File uploads
+Node.js 22 + Express + TypeScript
+PostgreSQL 15 - Users and check history
+JWT middleware - Applied to all data routes
+Multer - File uploads
 
 ### AI Service
-- **Python 3.9** + FastAPI
-- **ChromaDB** - Vector database
-- **Sentence Transformers** - Embeddings
-- **HuggingFace Inference API** - BioMistral-7B
-- **LangChain** - RAG framework
+Python 3.9 + FastAPI
+ChromaDB - Vector database, persisted to a named volume
+Sentence Transformers (all-MiniLM-L6-v2) - Local embeddings
+Groq (openai/gpt-oss-120b) - Inference, JSON mode with a structured schema
 
+Infrastructure
+Docker Compose - Separate dev and production configs
+AWS EC2 + nginx
+Let's Encrypt - TLS with automated renewal hooks
+GitHub Actions - CI/CD
 ---
 
-## 📊 API Examples
-
-### Generate Diagnosis
-
-```bash
-curl -X POST http://localhost:3000/diagnose \
-  -H "Content-Type: application/json" \
-  -d '{
-    "patientId": "P-2024-001",
-    "age": 45,
-    "gender": "Male",
-    "symptoms": "Persistent dry cough, fever, fatigue",
-    "duration": "2 weeks",
-    "history": "Non-smoker, no chronic diseases"
-  }'
-```
-
-### Upload Medical Documents
-
-```bash
-curl -X POST http://localhost:3000/upload-documents \
-  -F "documents=@clinical_guideline.pdf" \
-  -F "documents=@treatment_protocol.pdf"
-```
-
-### List Indexed Documents
-
-```bash
-curl http://localhost:3000/documents
-```
-
----
 
 ## 🔐 Security
 
@@ -201,17 +120,7 @@ curl http://localhost:3000/documents
 
 ---
 
-## 🤝 Contributing
 
-Contributions welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
-
----
-
-## ⚖️ License
-
-MIT License - See [LICENSE](./LICENSE) for details
-
----
 
 ## ⚠️ Disclaimer
 
@@ -227,7 +136,7 @@ MIT License - See [LICENSE](./LICENSE) for details
 
 ## 📞 Support
 
-- 📧 Email: support@medcore.ai
+- 📧 Email: raed.hassaan@gmaail.com
 - 💬 Discord: [Join our community](#)
 - 🐛 Issues: [GitHub Issues](https://github.com/yourusername/medcore-ai/issues)
 
@@ -235,11 +144,10 @@ MIT License - See [LICENSE](./LICENSE) for details
 
 ## 🙏 Acknowledgments
 
-- **BioMistral** team for the medical LLM
-- **HuggingFace** for the inference API
-- **ChromaDB** for the vector database
-- **LangChain** for the RAG framework
-
+NIH, CDC and NIAMS for the public health documents the corpus is built from
+Groq for the inference API
+ChromaDB for the vector database
+Sentence Transformers for the embedding mode
 ---
 
 **Built with ❤️ for the medical community**
