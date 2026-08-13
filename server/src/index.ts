@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { Pool } from 'pg';
@@ -8,6 +9,23 @@ import fs from 'fs';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.routes';
 import { requireAuth } from './middleware/auth.middleware';
+import './instrument';
+
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  tracesSampleRate: 0.2,
+  sendDefaultPii: false,
+  beforeSend(event) {
+    if (event.request) {
+      delete event.request.data;
+      delete event.request.cookies;
+      delete event.request.headers;
+    }
+    return event;
+  },
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -349,6 +367,8 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // ============================================
 // START SERVER
 // ============================================
+
+Sentry.setupExpressErrorHandler(app);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
