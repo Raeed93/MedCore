@@ -2,39 +2,59 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-
-    <!-- ── Favicon using inline SVG (the ECG logo) ── -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none'%3E%3Cdefs%3E%3Cmask id='r'%3E%3Crect width='48' height='48' fill='white'/%3E%3Crect x='3' y='22' width='8' height='4' fill='black'/%3E%3Crect x='37' y='22' width='8' height='4' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Ccircle cx='24' cy='24' r='18' stroke='%237F1D1D' stroke-width='2.5' fill='none' mask='url(%23r)'/%3E%3Cpath d='M2 24 L17 24 L20 17 L24 31 L28 19 L31 24 L46 24' stroke='%237F1D1D' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E" />
-
-    <!-- ── Viewport ── -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- ── Primary meta ── -->
-    <title>Pulse AI — Clinical Intelligence Platform</title>
-    <meta name="description" content="AI-powered medical diagnosis system. Evidence-based diagnostic recommendations for medical professionals, powered by advanced AI and medical literature." />
-    <meta name="theme-color" content="#7F1D1D" />
+    <!-- ── Favicon: the ECG mark, oxblood on transparent ─────────────────── -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none'%3E%3Cdefs%3E%3Cmask id='r'%3E%3Crect width='48' height='48' fill='white'/%3E%3Crect x='3' y='22' width='8' height='4' fill='black'/%3E%3Crect x='37' y='22' width='8' height='4' fill='black'/%3E%3C/mask%3E%3C/defs%3E%3Ccircle cx='24' cy='24' r='18' stroke='%237F1D1D' stroke-width='2.5' fill='none' mask='url(%23r)'/%3E%3Cpath d='M2 24 L17 24 L20 17 L24 31 L28 19 L31 24 L46 24' stroke='%237F1D1D' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E" />
 
-    <!-- ── Open Graph (WhatsApp, LinkedIn, Slack previews) ── -->
+    <!-- ── Primary meta ──────────────────────────────────────────────────── -->
+    <title>Pulse — Understand your symptoms before you see a doctor</title>
+    <meta
+      name="description"
+      content="Describe how you're feeling and get plain-language background drawn from public health literature, plus questions worth asking at your appointment. An educational portfolio project — not medical advice."
+    />
+    <meta name="theme-color" content="#F1EFE9" />
+    <link rel="canonical" href="https://pulsemd.live/" />
+
+    <!-- ── Open Graph — LinkedIn, WhatsApp, Slack ────────────────────────── -->
+    <!-- og:image MUST be an absolute URL. LinkedIn silently drops relative
+         paths, which is why the old "/og-image.png" produced a blank card. -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Pulse AI — Clinical Intelligence Platform" />
-    <meta property="og:description" content="Evidence-based diagnostic recommendations for medical professionals, powered by advanced AI." />
+    <meta property="og:site_name" content="Pulse" />
+    <meta property="og:url" content="https://pulsemd.live/" />
+    <meta property="og:title" content="Pulse — Understand your symptoms before you see a doctor" />
+    <meta
+      property="og:description"
+      content="A retrieval-augmented symptom education tool built on ChromaDB, FastAPI and Docker. Grounded in public health literature, cited, and self-hosted. Educational project — not medical advice."
+    />
     <meta property="og:image" content="https://pulsemd.live/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Pulse — retrieval-augmented symptom education. RAG, ChromaDB, FastAPI, Docker, AWS." />
 
-    <!-- ── Twitter card ── -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Pulse AI" />
-    <meta name="twitter:description" content="AI-powered clinical decision support for medical professionals." />
+    <!-- ── Twitter / X ───────────────────────────────────────────────────── -->
+    <!-- summary_large_image gives the full-width banner; the old "summary"
+         rendered a small square thumbnail. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Pulse — Understand your symptoms before you see a doctor" />
+    <meta
+      name="twitter:description"
+      content="A retrieval-augmented symptom education tool. Grounded, cited, self-hosted. Educational project — not medical advice."
+    />
+    <meta name="twitter:image" content="https://pulsemd.live/og-image.png" />
 
-    <!-- ── Fonts preload for performance ── -->
+    <!-- ── Fonts ─────────────────────────────────────────────────────────── -->
+    <!-- Loaded once, here. Components must not re-declare @import inside a
+         <style> block — that duplicates the request on every mount. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400..700&family=DM+Sans:wght@300;400;500&display=swap"
       rel="stylesheet"
     />
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="./src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

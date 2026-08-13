@@ -1,13 +1,704 @@
 @import "tailwindcss";
 
-/* The Medical Background Style */
-.medical-bg {
-  background: 
-    linear-gradient(to bottom, rgba(69, 10, 10, 0.9), rgba(69, 10, 10, 0.8)),
-    url('https://images.unsplash.com/photo-1587351021759-3e566b9af923?q=80&w=2000&auto=format&fit=crop');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  min-height: 100vh;
-  color: white;
+/* ══════════════════════════════════════════════════════════════════════════
+   PULSE — DESIGN TOKENS
+   Single source of truth. Tailwind v4 emits every @theme variable BOTH as a
+   utility class and as a CSS custom property on :root, so the same token
+   works two ways:
+
+     <div className="bg-paper text-ink">          ← utility
+     <div style={{ color: 'var(--color-ink)' }}>  ← inline style
+
+   Never write a hex literal in a component again.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Surface ──────────────────────────────────────────────────────────
+     Bone, not cream. The reference is a cool neutral paper; the old #f5ebe8
+     was pink-leaning and fought the near-black type. */
+  --color-bone:        #EFEBE4;   /* page ground — warm cream            */
+  --color-paper:       #FFFFFF;   /* cards — true white, floats on bone  */
+  --color-rule:        #E3DED4;   /* hairline dividers                   */
+  --color-rule-strong: #C2BAAC;   /* input underlines, emphasis          */
+
+  /* ── Ink ──────────────────────────────────────────────────────────────
+     Warm near-black. Pure #000 reads digital; this reads printed. */
+  --color-ink:    #16130F;        /* display headings                   */
+  --color-body:   #3B362F;        /* paragraphs                         */
+  --color-muted:  #6E675D;        /* labels, secondary text             */
+  --color-faint:  #9A9288;        /* captions, meta, placeholders       */
+
+  /* ── Accent ───────────────────────────────────────────────────────────
+     Oxblood is DEMOTED: it is no longer a surface colour. It appears only
+     in the logo mark, the single primary action, and emergency warnings.
+     That scarcity is what makes the red-flag panel actually alarming. */
+  --color-brand:      #7F1D1D;
+  --color-brand-deep: #5C1414;    /* hover / pressed                    */
+  --color-brand-wash: #F4EAE8;    /* solid tint — no alpha stacking     */
+
+  /* ── Status ───────────────────────────────────────────────────────────
+     Desaturated to sit inside a paper palette. */
+  --color-ok:    #2F5D3A;
+  --color-warn:  #8A6A1F;
+  --color-high:  #9A3C0A;
+  --color-alert: #7F1D1D;
+
+  /* ── Type ─────────────────────────────────────────────────────────────
+     Bodoni Moda is a true Didone — the hairline/stem contrast the reference
+     is built on. Playfair Display is too low-contrast to land that look.
+     DM Sans stays: it carries every word under 20px. */
+  --font-display: 'Bodoni Moda', Georgia, 'Times New Roman', serif;
+  --font-sans:    'DM Sans', system-ui, -apple-system, sans-serif;
+
+  /* ── Radius ───────────────────────────────────────────────────────────
+     Editorial layouts are near-square. The old rounded-2xl (16px) is a SaaS
+     tell and directly contradicts this direction. */
+  --radius-card:  10px;
+  --radius-input: 8px;
+  --radius-pill:  999px;
+
+  /* Elevation. A single soft shadow, used at one strength everywhere —
+     varying shadow depth across a page is what makes a UI feel unresolved. */
+  --shadow-card: 0 1px 2px rgba(30, 25, 18, 0.04),
+                 0 8px 24px rgba(30, 25, 18, 0.05);
+  --shadow-lift: 0 2px 4px rgba(30, 25, 18, 0.05),
+                 0 14px 36px rgba(30, 25, 18, 0.08);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BASE
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: var(--color-bone);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+    font-weight: 400;
+    margin: 0;
+  }
+
+  ::selection {
+    background: var(--color-brand);
+    color: var(--color-bone);
+  }
+
+  /* Keyboard focus is visible everywhere by default — components no longer
+     need to remember to add it. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HANDLES
+   Every repeated pattern in the app, defined once. Components import nothing
+   and declare no <style> block — they just use these class names.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+
+  /* ── Display type ─────────────────────────────────────────────────────
+     Didone at display sizes only. Below ~20px the hairlines disappear, so
+     there is deliberately no small display size. */
+  .display-xl,
+  .display-lg,
+  .display-md {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--color-ink);
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+    margin: 0;
+  }
+  .display-xl { font-size: clamp(40px, 7vw, 78px); }
+  .display-lg { font-size: clamp(28px, 4.4vw, 44px); }
+  .display-md { font-size: clamp(21px, 2.8vw, 28px); line-height: 1.18; }
+
+  /* ── Utility type ─────────────────────────────────────────────────────
+     The eyebrow is the reference's other signature: 10px, tracked wide
+     enough to read as a printed rubric rather than a UI label. */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+  .eyebrow-brand { color: var(--color-brand); }
+
+  .lede {
+    font-size: clamp(15px, 1.5vw, 17px);
+    font-weight: 300;
+    line-height: 1.75;
+    color: var(--color-body);
+    max-width: 58ch;
+  }
+
+  .meta {
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--color-faint);
+  }
+
+  .label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--color-muted);
+    margin-bottom: 7px;
+  }
+
+  /* ── Structure ────────────────────────────────────────────────────────
+     Hairline rules replace the frosted-glass cards. Glassmorphism and
+     editorial print are different design languages; running both reads as
+     indecision. */
+  .rule       { border: 0; border-top: 1px solid var(--color-rule); margin: 0; }
+  .rule-heavy { border: 0; border-top: 1px solid var(--color-rule-strong); margin: 0; }
+
+  .card {
+    background: var(--color-paper);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: 28px;
+  }
+
+  /* Interactive cards only — a static panel should not animate on hover. */
+  .card-hover { transition: box-shadow 0.2s ease, transform 0.2s ease; }
+  .card-hover:hover {
+    box-shadow: var(--shadow-lift);
+    transform: translateY(-2px);
+  }
+
+  .card-flat {
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--color-rule);
+    padding: 28px 0 0;
+  }
+
+  /* Section wrapper — one place to change page rhythm. */
+  .section { padding: clamp(48px, 8vw, 96px) clamp(20px, 5vw, 64px); }
+  .measure { max-width: 1080px; margin-inline: auto; }
+  .measure-tight { max-width: 720px; margin-inline: auto; }
+
+  /* ── Actions ──────────────────────────────────────────────────────────
+     One primary button in the whole app. Everything else is a ghost or a
+     text link — that is what keeps the oxblood meaningful. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 26px;
+    border: 1px solid var(--color-brand);
+    border-radius: var(--radius-input);
+    background: var(--color-brand);
+    color: var(--color-bone);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--color-brand-deep);
+    border-color: var(--color-brand-deep);
+    box-shadow: var(--shadow-card);
+  }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 26px;
+    border: 1px solid var(--color-rule-strong);
+    border-radius: var(--radius-input);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    border-color: var(--color-ink);
+    box-shadow: var(--shadow-card);
+  }
+
+  .btn-text {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--color-brand);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.16s ease;
+  }
+  .btn-text:hover { border-bottom-color: var(--color-brand); }
+
+  /* ── Fields ───────────────────────────────────────────────────────────
+     Underline-only inputs. A boxed input inside a hairline layout adds a
+     second border weight the page does not need. */
+  .field {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 14px;
+    background: var(--color-paper);
+    border: 1px solid var(--color-rule-strong);
+    border-radius: var(--radius-input);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--color-ink);
+    outline: none;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  }
+  .field:focus {
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 10%, transparent);
+  }
+  .field:disabled {
+    background: var(--color-bone);
+    color: var(--color-faint);
+    cursor: not-allowed;
+  }
+  .field::placeholder { color: var(--color-faint); font-weight: 300; }
+
+  .field-row { position: relative; }
+  .field-row .field { padding-left: 38px; }
+  .field-row > svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-faint);
+    pointer-events: none;
+  }
+  .field-row:focus-within > svg { color: var(--color-brand); }
+
+  /* ── Status notices ───────────────────────────────────────────────────
+     Left rule instead of a filled panel — keeps the page flat and reserves
+     filled oxblood for the emergency case alone. */
+  .notice {
+    border: 1px solid var(--color-rule);
+    border-left: 3px solid var(--color-rule-strong);
+    border-radius: var(--radius-input);
+    background: var(--color-paper);
+    padding: 14px 18px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--color-body);
+  }
+  .notice-alert { border-left-color: var(--color-alert); }
+  .notice-ok    { border-left-color: var(--color-ok); }
+  .notice-info  { border-left-color: var(--color-rule-strong); }
+
+  .notice-emergency {
+    background: var(--color-brand);
+    color: var(--color-bone);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: 24px 28px;
+  }
+
+  /* ── Signature: the ECG rule ──────────────────────────────────────────
+     Section dividers are the logo's waveform drawn at hairline weight. It is
+     the one motif carried across landing, dashboard, and the OG card — and
+     it comes from the product's own world rather than a stock flourish. */
+  .ecg-rule {
+    display: block;
+    width: 100%;
+    height: 24px;
+    color: var(--color-rule-strong);
+  }
+  .ecg-rule path {
+    stroke: currentColor;
+    stroke-width: 1;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ── Data table ───────────────────────────────────────────────────────
+     Ruled rows, no zebra fill, no rounded container. */
+   .table-editorial { width: 100%; border-collapse: collapse; }
+  .table-editorial th {
+    text-align: left;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-rule-strong);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+  .table-editorial td {
+    padding: 16px;
+    border-bottom: 1px solid var(--color-rule);
+    font-size: 13px;
+    color: var(--color-body);
+    vertical-align: top;
+  }
+  .table-editorial tbody tr { transition: background 0.14s ease; }
+  .table-editorial tbody tr:hover { background: var(--color-bone); }
+
+
+
+  /* ── Sidebar navigation ───────────────────────────────────────────────
+     No pill, no fill, no rounded highlight. The active item is marked by a
+     single oxblood rule in the margin — the same hairline vocabulary the
+     rest of the page uses, and the only place red appears in the chrome. */
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 0 9px 15px;
+    margin-left: -2px;
+    border-left: 2px solid transparent;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--color-muted);
+    text-decoration: none;
+    transition: color 0.16s ease, border-color 0.16s ease;
+  }
+  .nav-item:hover { color: var(--color-ink); }
+  .nav-item.is-active {
+    color: var(--color-ink);
+    font-weight: 500;
+    border-left-color: var(--color-brand);
+  }
+    /* Icons inherit the row colour, so they never need their own prop. */
+  .nav-item svg { color: var(--color-faint); transition: color 0.16s ease; }
+  .nav-item:hover svg,
+  .nav-item.is-active svg { color: var(--color-brand); }
+
+  /* Icon-only control: the mobile menu and drawer-close buttons. */
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-card);
+    color: var(--color-body);
+    cursor: pointer;
+    transition: border-color 0.16s ease, color 0.16s ease;
+  }
+  .icon-btn:hover { border-color: var(--color-ink); color: var(--color-ink); }
+
+  /* Wordmark, used beside the logo mark in every chrome surface. */
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+    line-height: 1;
+  }
+  /* ── Loading spinner ──────────────────────────────────────────────────
+     Defined once. Every component was declaring its own @keyframes with a
+     different prefix (lg-spin, pm-spin, prof-spin, spin) to avoid collisions
+     — a problem that only existed because the rule lived in the components. */
+  .spin { animation: pulse-spin 0.8s linear infinite; }
+  @keyframes pulse-spin { to { transform: rotate(360deg); } }
+
+  /* ── Split auth layout ────────────────────────────────────────────────
+     The left panel is bone, not oxblood. Filling half the viewport with the
+     accent colour is exactly the demotion this retheme is built on: red
+     marks the action and the emergency, nothing else. Separation comes from
+     the rule and the type scale instead. */
+  .auth-aside {
+    background: var(--color-paper);
+    border-right: 1px solid var(--color-rule);
+  }
+
+  /* ── Field group ──────────────────────────────────────────────────────
+     Pairs a .label with a .field and keeps the icon aligned to the
+     underline rather than centred in a box that no longer exists. */
+  .field-row { position: relative; }
+  .field-row .field { padding-left: 26px; }
+  .field-row > svg {
+    position: absolute;
+    left: 0;
+    bottom: 13px;
+    color: var(--color-faint);
+    pointer-events: none;
+  }
+  .field-row:focus-within > svg { color: var(--color-brand); }
+
+  /* Section heading inside a card. Replaces the uppercase oxblood headings
+     that appeared six times per result — the single biggest source of red
+     in the app. */
+  .card-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--color-rule);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    color: var(--color-ink);
+  }
+  .card-heading svg { color: var(--color-brand); opacity: 0.8; }
+
+  /* For headings that sit inside an already-bordered panel (the citation
+     block), where a second rule would double up. */
+  .card-heading-plain {
+    border-bottom: 0;
+    padding-bottom: 0;
+    margin-bottom: 6px;
+  }
+
+  /* Status pill — urgency levels, provenance flags. */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    border: 1px solid currentColor;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Citation entry. Sized so a source list of ten still scans. */
+  .citation {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--color-rule);
+  }
+  .citation:first-of-type { border-top: 0; }
+  .citation-index {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-brand);
+    padding-top: 1px;
+    min-width: 20px;
+  }
+
+  .fade-in { animation: pulse-fade-in 0.4s ease both; }
+  @keyframes pulse-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Determinate progress. Only honest when the duration is actually known —
+     here it mirrors a fixed setTimeout, so it is. */
+  .progress-track {
+    height: 2px;
+    width: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--color-rule);
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--color-ok);
+    animation: pulse-progress var(--progress-duration, 2s) linear forwards;
+  }
+  @keyframes pulse-progress { from { width: 0%; } to { width: 100%; } }
+
+  /* Screen-reader-only text, for table actions and icon buttons that carry
+     no visible label. */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+/* ── PART A — define on :root ─────────────────────────────────────────── */
+
+  :root {
+    /* System mono stack: no extra font request, and it renders as whatever the
+       reader's own editor uses — which is the point when the thing being shown
+       is a pipeline trace. */
+    --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+
+
+  /* ── Retrieval trace ──────────────────────────────────────────────────
+     The signature element of the landing page. It shows the actual shape of
+     a RAG round-trip — query in, ranked chunks with L2 distances, answer out
+     — because that pipeline is the work this project is meant to show, and
+     a screenshot of a form would not show it.
+
+     Deliberately monospace and unstyled-looking: it should read as
+     instrumentation, not as marketing. */
+  .trace {
+    background: var(--color-paper);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    font-family: var(--font-mono);
+  }
+  .trace-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--color-rule);
+    background: var(--color-bone);
+  }
+  .trace-step {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .trace-step:last-child { border-bottom: 0; }
+  .trace-label {
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+    margin-bottom: 8px;
+  }
+  .trace-value {
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--color-ink);
+  }
+
+  /* One retrieved chunk: filename, page, distance. */
+  .chunk {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 12px;
+    color: var(--color-body);
+  }
+  .chunk-dist {
+    margin-left: auto;
+    flex-shrink: 0;
+    color: var(--color-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  /* Marks the chunk that fell outside RAG_MAX_DISTANCE and was discarded —
+     showing the threshold doing its job is more interesting than hiding it. */
+  .chunk-cut { color: var(--color-faint); text-decoration: line-through; }
+
+  /* ── Bento tile ───────────────────────────────────────────────────────
+     Same card treatment, sized by the grid rather than by its own padding,
+     so a 1x1 fact tile and a 2x1 feature tile stay in the same family. */
+  .tile {
+    background: var(--color-paper);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Landing nav ──────────────────────────────────────────────────── */
+  .nav-landing {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 16px clamp(20px, 5vw, 64px);
+    background: color-mix(in srgb, var(--color-bone) 88%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .nav-landing a {
+    font-size: 13px;
+    color: var(--color-muted);
+    text-decoration: none;
+    transition: color 0.16s ease;
+  }
+  .nav-landing a:hover { color: var(--color-ink); }
+  /* ── Marquee ──────────────────────────────────────────────────────────
+     The track holds three copies of the list and translates by exactly one
+     third, so the loop is seamless. Paused on hover so anyone trying to
+     read an item can. */
+  .marquee {
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 14px 0;
+    border-top: 1px solid var(--color-rule);
+    border-bottom: 1px solid var(--color-rule);
+    background: var(--color-paper);
+  }
+  .marquee-track {
+    display: inline-block;
+    animation: marquee-slide 34s linear infinite;
+  }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+  @keyframes marquee-slide {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-33.333%); }
+  }
+  .marquee-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 44px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+  .marquee-item::before {
+    content: '';
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--color-brand);
+    flex-shrink: 0;
+  }
+  .preview { position: relative; }
+  .preview-tag {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    z-index: 1;
+    background: var(--color-bone);
+    padding: 0 8px;
+  }
+  /* Tighter than the live card — this is an illustration, not a document. */
+  .preview .card-heading { font-size: 12px; margin-bottom: 12px; padding-bottom: 8px; }
 }

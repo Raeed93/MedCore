@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Component } from 'react';
 import type { ReactNode } from 'react';
 import { AuthProvider } from './context/AuthContext';
-import LandingPage from './components/layout/landingPage';
+import LandingPage from './components/LandingPage';
 import LoginForm from './components/auth/loginForm';
 import VerifyEmail from './components/auth/verfyEmail';
 import ProtectedRoute from './components/auth/protectedRoute';

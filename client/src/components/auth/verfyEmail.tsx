@@ -2,29 +2,27 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
+import Logo from '../Logo';
 
-const Logo = ({ size = 40, color = '#7F1D1D' }: { size?: number; color?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" width={size} height={size}>
-    <defs>
-      <mask id="ve-ring">
-        <rect width="48" height="48" fill="white" />
-        <rect x="3" y="22" width="8" height="4" fill="black" />
-        <rect x="37" y="22" width="8" height="4" fill="black" />
-      </mask>
-    </defs>
-    <circle cx="24" cy="24" r="18" stroke={color} strokeWidth="2.5" fill="none" mask="url(#ve-ring)" />
-    <path
-      d="M2 24 L17 24 L20 17 L24 31 L28 19 L31 24 L46 24"
-      stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"
-    />
-  </svg>
-);
+const REDIRECT_MS = 2000;
+
+// The three failures are different problems with different fixes, and the
+// old screen titled all of them "Link expired" — telling someone with a
+// network fault to request a new link, which would not have helped.
+type Failure = 'missing' | 'invalid' | 'network';
+
+const FAILURE_COPY: Record<Failure, { title: string; canRetry: boolean }> = {
+  missing: { title: 'This link is incomplete', canRetry: true },
+  invalid: { title: 'This link has expired',   canRetry: true },
+  network: { title: 'Could not reach us',      canRetry: false },
+};
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { login } = useAuth();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
+  const [failure, setFailure] = useState<Failure>('invalid');
   const [message, setMessage] = useState('');
 
   const hasVerified = useRef(false);
@@ -39,166 +37,99 @@ export default function VerifyEmail() {
     const token = searchParams.get('token');
     if (!token) {
       setStatus('error');
-      setMessage('Missing verification token. Please request a new sign-in link.');
+      setFailure('missing');
+      setMessage('The address is missing its sign-in token. Request a new link and open it directly from your email.');
       return;
     }
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/verify?token=${token}`,
+        `${import.meta.env.VITE_API_URL}/auth/verify?token=${encodeURIComponent(token)}`,
         { credentials: 'include' }
       );
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         login(data.user);
         setStatus('success');
-        setMessage('You\'re signed in. Taking you to your dashboard…');
-        setTimeout(() => navigate('/dashboard'), 2000);
+        setMessage('Taking you to your dashboard…');
+        setTimeout(() => navigate('/dashboard'), REDIRECT_MS);
       } else {
         setStatus('error');
-        setMessage(data.message || 'Verification failed. This link may have expired.');
+        setFailure('invalid');
+        setMessage(data.message || 'Sign-in links last 15 minutes and work once. Request a new one to continue.');
       }
-    } catch (error) {
+    } catch {
       setStatus('error');
-      setMessage('Something went wrong. Please check your connection and try again.');
+      setFailure('network');
+      setMessage('Check your connection and reload this page. Your link is still valid.');
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center p-6"
-      style={{ background: '#f5ebe8', fontFamily: "'DM Sans', sans-serif" }}
-    >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap');
-        .ve-serif { font-family: 'Playfair Display', serif; }
-        @keyframes ve-spin { to { transform: rotate(360deg); } }
-        .ve-spin { animation: ve-spin 0.9s linear infinite; }
-        @keyframes ve-pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
-        .ve-pulse { animation: ve-pulse 1.8s ease-in-out infinite; }
-        @keyframes ve-fade { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-        .ve-fade { animation: ve-fade 0.5s ease forwards; }
-        .ve-btn:hover { background: #6b1818 !important; }
-        .ve-btn-outline:hover { background: rgba(127,29,29,0.06) !important; }
-      `}</style>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6">
 
-      {/* Brand header */}
-      <div className="flex items-center gap-2.5 mb-10">
-        <Logo size={30} />
-        <span className="ve-serif font-bold text-lg" style={{ color: '#7F1D1D' }}>Pulse AI</span>
+      <div className="flex items-center gap-2.5" style={{ marginBottom: 36 }}>
+        <Logo size={26} />
+        <span className="wordmark" style={{ fontSize: 19 }}>Pulse AI</span>
       </div>
 
-      {/* Card */}
-      <div
-        className="w-full max-w-sm rounded-2xl p-8 md:p-10 text-center"
-        style={{
-          background: 'rgba(255,255,255,0.45)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
-          border: '1px solid rgba(255,255,255,0.65)',
-        }}
-      >
+      <div className="card" style={{ width: '100%', maxWidth: 400, padding: 40, textAlign: 'center' }}>
 
-        {/* ── VERIFYING ── */}
         {status === 'verifying' && (
-          <div className="ve-fade flex flex-col items-center">
-            {/* Animated ECG + spinner combo */}
-            <div className="relative mb-6">
-              <div className="ve-pulse opacity-20 mb-2">
-                <svg viewBox="0 0 120 32" fill="none" style={{ width: 120 }}>
-                  <path
-                    d="M0 16 L24 16 L32 3 L38 29 L44 8 L50 16 L120 16"
-                    stroke="#7F1D1D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <Loader2
-                size={36}
-                className="ve-spin mx-auto"
-                style={{ color: '#7F1D1D' }}
-              />
-            </div>
-            <h2 className="ve-serif font-bold mb-2" style={{ fontSize: 22, color: '#2a0a0a' }}>
-              Verifying your link
-            </h2>
-            <p className="text-sm font-light leading-relaxed" style={{ color: '#7a4a4a' }}>
-              Please wait while we securely sign you in…
+          <div className="fade-in flex flex-col items-center">
+            <Loader2 size={26} className="spin" style={{ color: 'var(--color-brand)', marginBottom: 22 }} />
+            <h1 className="display-md" style={{ marginBottom: 8 }}>Signing you in</h1>
+            <p style={{ fontSize: 13, fontWeight: 300, color: 'var(--color-muted)', lineHeight: 1.65 }}>
+              Checking your link. This takes a second.
             </p>
           </div>
         )}
 
-        {/* ── SUCCESS ── */}
         {status === 'success' && (
-          <div className="ve-fade flex flex-col items-center">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
-              style={{ background: 'rgba(22,101,52,0.08)', border: '1px solid rgba(22,101,52,0.2)' }}
-            >
-              <CheckCircle size={32} color="#166534" />
-            </div>
-            <h2 className="ve-serif font-bold mb-2" style={{ fontSize: 22, color: '#2a0a0a' }}>
-              You're signed in!
-            </h2>
-            <p className="text-sm font-light leading-relaxed mb-6" style={{ color: '#7a4a4a' }}>
+          <div className="fade-in flex flex-col items-center">
+            <CheckCircle size={26} style={{ color: 'var(--color-ok)', marginBottom: 22 }} />
+            <h1 className="display-md" style={{ marginBottom: 8 }}>You&rsquo;re in</h1>
+            <p style={{ fontSize: 13, fontWeight: 300, color: 'var(--color-muted)', lineHeight: 1.65, marginBottom: 26 }}>
               {message}
             </p>
-            {/* Progress bar */}
-            <div
-              className="w-full rounded-full overflow-hidden"
-              style={{ height: 3, background: 'rgba(22,101,52,0.12)' }}
-            >
-              <div
-                className="h-full rounded-full"
-                style={{
-                  background: '#166534',
-                  width: '100%',
-                  animation: 'progress 2s linear forwards',
-                }}
-              />
+            <div className="progress-track">
+              <div className="progress-bar" style={{ ['--progress-duration' as string]: `${REDIRECT_MS}ms` }} />
             </div>
-            <style>{`
-              @keyframes progress { from { width:0%; } to { width:100%; } }
-            `}</style>
           </div>
         )}
 
-        {/* ── ERROR ── */}
         {status === 'error' && (
-          <div className="ve-fade flex flex-col items-center">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
-              style={{ background: 'rgba(127,29,29,0.07)', border: '1px solid rgba(127,29,29,0.18)' }}
-            >
-              <XCircle size={32} color="#7F1D1D" />
-            </div>
-            <h2 className="ve-serif font-bold mb-2" style={{ fontSize: 22, color: '#2a0a0a' }}>
-              Link expired
-            </h2>
-            <p className="text-sm font-light leading-relaxed mb-7" style={{ color: '#7a4a4a' }}>
+          <div className="fade-in flex flex-col items-center">
+            <XCircle size={26} style={{ color: 'var(--color-alert)', marginBottom: 22 }} />
+            <h1 className="display-md" style={{ marginBottom: 8 }}>
+              {FAILURE_COPY[failure].title}
+            </h1>
+            <p style={{ fontSize: 13, fontWeight: 300, color: 'var(--color-muted)', lineHeight: 1.65, marginBottom: 28, maxWidth: '38ch' }}>
               {message}
             </p>
+
             <div className="flex flex-col gap-2.5 w-full">
-              <button
-                onClick={() => navigate('/login')}
-                className="ve-btn w-full py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all"
-                style={{ background: '#7F1D1D', color: '#f5ebe8', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}
-              >
-                Request a new link <ArrowRight size={14} />
-              </button>
-              <button
-                onClick={() => navigate('/')}
-                className="ve-btn-outline w-full py-3 rounded-xl text-sm font-medium transition-all"
-                style={{ background: 'transparent', color: '#7F1D1D', border: '1.5px solid rgba(127,29,29,0.3)', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}
-              >
-                Back to Home
+              {FAILURE_COPY[failure].canRetry ? (
+                <button className="btn" style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => navigate('/login')}>
+                  Request a new link <ArrowRight size={14} />
+                </button>
+              ) : (
+                <button className="btn" style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => window.location.reload()}>
+                  Try again
+                </button>
+              )}
+              <button className="btn-ghost" style={{ width: '100%', justifyContent: 'center' }}
+                onClick={() => navigate('/')}>
+                Back to home
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer note */}
-      <p className="mt-8 text-xs text-center font-light" style={{ color: '#9a6060', maxWidth: 300 }}>
-        Sign-in links expire after 15 minutes for security. If yours expired, simply request a new one.
+      <p className="meta" style={{ marginTop: 28, textAlign: 'center', maxWidth: 320, lineHeight: 1.7 }}>
+        Sign-in links expire after 15 minutes and can only be used once.
       </p>
     </div>
   );

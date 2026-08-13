@@ -1,4 +1,20 @@
-import { AlertTriangle, CheckCircle, Activity, FileText, X, FlaskConical, ClipboardList, HelpCircle, BookOpen } from 'lucide-react';
+import {
+  AlertTriangle, CheckCircle, HelpCircle, BookOpen,
+  Activity, GitBranch, FlaskConical, ClipboardList, X,
+} from 'lucide-react';
+
+
+export type Source =
+  | string
+  | {
+      title: string;
+      page?: number;
+      /** L2 distance from the query embedding. Lower is closer. */
+      distance?: number;
+      /** The retrieved chunk, if the API starts returning it. */
+      excerpt?: string;
+      url?: string;
+    };
 
 export interface DiagnosisResult {
   primaryDiagnosis: string[];
@@ -9,8 +25,8 @@ export interface DiagnosisResult {
   urgencyLevel: 'low' | 'medium' | 'high' | 'critical' | 'unknown';
   recommendations: string[];
   notes: string;
-  sources?: string[];
-  groundedInLiterature?: boolean; 
+  sources?: Source[];
+  groundedInLiterature?: boolean;
 }
 
 interface DiagnosisResultsProps {
@@ -18,240 +34,251 @@ interface DiagnosisResultsProps {
   onClose: () => void;
 }
 
-const frosted: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.38)',
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  border: '1px solid rgba(255,255,255,0.6)',
-};
+const normaliseSource = (s: Source) =>
+  typeof s === 'string' ? { title: s } : s;
+
+/** Strips the storage path and extension so "niams_back_pain.pdf" reads as
+ *  "Niams back pain" rather than a filename. */
+const prettyTitle = (title: string) =>
+  title
+    .replace(/^.*[/\\]/, '')
+    .replace(/\.(pdf|docx?|txt|md)$/i, '')
+    .replace(/[_-]+/g, ' ')
+    .trim();
 
 const urgencyConfig = {
-  critical: {
-    bg: 'rgba(127,29,29,0.1)',
-    border: 'rgba(127,29,29,0.35)',
-    color: '#7F1D1D',
-    label: 'Critical',
-    icon: <AlertTriangle size={16} />,
-  },
-  high: {
-    bg: 'rgba(154,60,10,0.08)',
-    border: 'rgba(154,60,10,0.3)',
-    color: '#9a3c0a',
-    label: 'High',
-    icon: <AlertTriangle size={16} />,
-  },
-  medium: {
-    bg: 'rgba(146,96,10,0.08)',
-    border: 'rgba(146,96,10,0.3)',
-    color: '#92600a',
-    label: 'Medium',
-    icon: <CheckCircle size={16} />,
-  },
-  low: {
-    bg: 'rgba(22,101,52,0.08)',
-    border: 'rgba(22,101,52,0.3)',
-    color: '#166534',
-    label: 'Low',
-    icon: <CheckCircle size={16} />,
-  },
-  // Previously an unrecognised value fell through to `medium`, which invented a
-  // clinical judgement the backend had explicitly declined to make.
-  unknown: {
-    bg: 'rgba(122,74,74,0.06)',
-    border: 'rgba(122,74,74,0.22)',
-    color: '#7a4a4a',
-    label: 'Not assessed',
-    icon: <HelpCircle size={16} />,
-  },
+  critical: { color: 'var(--color-alert)', label: 'Critical', Icon: AlertTriangle },
+  high:     { color: 'var(--color-high)',  label: 'High',     Icon: AlertTriangle },
+  medium:   { color: 'var(--color-warn)',  label: 'Medium',   Icon: CheckCircle },
+  low:      { color: 'var(--color-ok)',    label: 'Low',      Icon: CheckCircle },
+  // An unrecognised value previously fell through to `medium`, inventing a
+  // judgement the backend had explicitly declined to make.
+  unknown:  { color: 'var(--color-muted)', label: 'Not assessed', Icon: HelpCircle },
 };
 
-const fontImport = (
-  <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap');
-    .dr-serif { font-family: 'Playfair Display', serif; }
-  `}</style>
-);
-
-const closeButtonStyle: React.CSSProperties = {
-  color: '#9a6060',
-  border: '1px solid rgba(127,29,29,0.12)',
-  background: 'rgba(255,255,255,0.5)',
-  cursor: 'pointer',
-};
+/** Repeated list block. Six near-identical sections were duplicated inline. */
+function Section({
+  icon: Icon, title, children,
+}: {
+  icon: typeof Activity; title: string; children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <h3 className="card-heading">
+        <Icon size={12} /> {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
 
 export function DiagnosisResults({ result, onClose }: DiagnosisResultsProps) {
-
-  // ── No relevant literature ────────────────────────────────────────────────
-  // Rendered as its own view rather than the normal layout with empty sections.
-  // A row of blank headings reads as a broken page; this reads as an answer.
-  
-
-  // ── Normal result ─────────────────────────────────────────────────────────
   const urgency = urgencyConfig[result.urgencyLevel] || urgencyConfig.unknown;
+  const sources = (result.sources || []).map(normaliseSource);
 
   return (
-    <div className="rounded-2xl p-6 md:p-8 flex flex-col gap-6"
-      style={{ ...frosted, fontFamily: "'DM Sans', sans-serif" }}>
-      {fontImport}
+    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
 
-      {/* Header */}
-      <div className="flex items-start justify-between">
+      {/* ── Header ───────────────────────────────────────────────────────
+          Was "AI-Generated Diagnosis" / "Review all findings carefully
+          before clinical decision-making". The product does not diagnose,
+          and the reader is not making a clinical decision. */}
+      <div
+        className="flex items-start justify-between gap-4"
+        style={{ padding: '24px 28px', borderBottom: '1px solid var(--color-rule)' }}
+      >
         <div>
-          <h2 className="dr-serif font-bold mb-1" style={{ fontSize: 20, color: '#2a0a0a' }}>
-            AI-Generated Diagnosis
-          </h2>
-          <p className="text-xs font-light" style={{ color: '#8a5050' }}>
-            Review all findings carefully before clinical decision-making
+          <div className="eyebrow" style={{ marginBottom: 8 }}>What this could relate to</div>
+          <p style={{ fontSize: 13, fontWeight: 300, color: 'var(--color-muted)', lineHeight: 1.6, maxWidth: '52ch' }}>
+            Background drawn from health literature — not a diagnosis. Bring it
+            to a clinician rather than acting on it.
           </p>
         </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg transition-colors hover:bg-red-50"
-          style={closeButtonStyle}>
-          <X size={16} />
+        <button onClick={onClose} className="icon-btn" aria-label="Close results">
+          <X size={15} />
         </button>
       </div>
 
-      {/* Urgency banner */}
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
-        style={{ background: urgency.bg, border: `1px solid ${urgency.border}` }}>
-        <span style={{ color: urgency.color }}>{urgency.icon}</span>
-        <div>
-          <p className="text-xs font-light mb-0.5" style={{ color: urgency.color, opacity: 0.75 }}>Urgency Level</p>
-          <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: urgency.color }}>
-            {urgency.label}
-          </p>
+      <div style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 32 }}>
+
+        {/* ── Provenance ─────────────────────────────────────────────────
+            The reader must be able to tell which kind of answer this is
+            without reading to the bottom of the page. */}
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="pill" style={{ color: urgency.color }}>
+            <urgency.Icon size={12} /> {urgency.label}
+          </span>
+          <span
+            className="pill"
+            style={{ color: result.groundedInLiterature === false ? 'var(--color-muted)' : 'var(--color-ok)' }}
+          >
+            <BookOpen size={12} />
+            {result.groundedInLiterature === false ? 'General knowledge' : 'From the library'}
+          </span>
         </div>
+
+        {result.groundedInLiterature === false && (
+          <div className="notice notice-info">
+            Nothing in the indexed documents covered these symptoms, so this is
+            general information rather than something drawn from a specific
+            source. Treat it as a starting point for a conversation with a
+            clinician.
+          </div>
+        )}
+
+        {result.primaryDiagnosis.length > 0 && (
+          <Section icon={Activity} title="Most commonly associated with">
+            <div className="flex flex-col gap-2">
+              {result.primaryDiagnosis.map((item, i) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: '12px 16px',
+                    background: 'var(--color-bone)',
+                    borderRadius: 'var(--radius-input)',
+                    borderLeft: '3px solid var(--color-brand)',
+                    fontSize: 14,
+                    color: 'var(--color-ink)',
+                  }}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {result.differentialDiagnosis.length > 0 && (
+          <Section icon={GitBranch} title="Other possibilities">
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {result.differentialDiagnosis.map((item, i) => (
+                <li key={i} style={{ fontSize: 14, fontWeight: 300, lineHeight: 1.65, color: 'var(--color-body)' }}>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {result.recommendedTests.length > 0 && (
+          <Section icon={FlaskConical} title="Tests a doctor might consider">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {result.recommendedTests.map((test, i) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: '10px 14px',
+                    border: '1px solid var(--color-rule)',
+                    borderRadius: 'var(--radius-input)',
+                    fontSize: 13,
+                    fontWeight: 300,
+                    color: 'var(--color-body)',
+                  }}
+                >
+                  {test}
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {result.recommendations.length > 0 && (
+          <Section icon={ClipboardList} title="Questions worth asking">
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {result.recommendations.map((rec, i) => (
+                <li key={i} className="flex gap-3" style={{ fontSize: 14, fontWeight: 300, lineHeight: 1.65, color: 'var(--color-body)' }}>
+                  <span style={{ color: 'var(--color-brand)', flexShrink: 0 }}>—</span>
+                  {rec}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {result.notes && (
+          <Section icon={BookOpen} title="Notes">
+            <p style={{ fontSize: 14, fontWeight: 300, lineHeight: 1.7, color: 'var(--color-body)' }}>
+              {result.notes}
+            </p>
+          </Section>
+        )}
+
+        {/* ── Citations ────────────────────────────────────────────────────
+            This is the part of the page that justifies the whole retrieval
+            pipeline: it is what separates a grounded answer from a model
+            talking. Given its own panel rather than a footnote list.
+
+            page / distance / excerpt render only when the API sends them, so
+            enriching the response later needs no change here. */}
+        {sources.length > 0 && (
+          <div
+            style={{
+              background: 'var(--color-bone)',
+              borderRadius: 'var(--radius-card)',
+              padding: '20px 22px',
+            }}
+          >
+            <h3 className="card-heading" style={{ marginBottom: 4 }}>
+              <BookOpen size={12} /> Sources · {sources.length}
+            </h3>
+            <p className="meta" style={{ marginBottom: 14 }}>
+              Passages retrieved from the document library and given to the model.
+            </p>
+
+            {sources.map((s, i) => (
+              <div key={i} className="citation">
+                <span className="citation-index">[{i + 1}]</span>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 13, color: 'var(--color-ink)', lineHeight: 1.5 }}>
+                    {s.url ? (
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                      >
+                        {prettyTitle(s.title)}
+                      </a>
+                    ) : (
+                      prettyTitle(s.title)
+                    )}
+                  </p>
+
+                  {(s.page !== undefined || s.distance !== undefined) && (
+                    <p className="meta" style={{ marginTop: 3 }}>
+                      {s.page !== undefined && `Page ${s.page}`}
+                      {s.page !== undefined && s.distance !== undefined && ' · '}
+                      {s.distance !== undefined && `Distance ${s.distance.toFixed(2)}`}
+                    </p>
+                  )}
+
+                  {s.excerpt && (
+                    <p
+                      style={{
+                        marginTop: 8,
+                        paddingLeft: 12,
+                        borderLeft: '2px solid var(--color-rule-strong)',
+                        fontSize: 12,
+                        fontWeight: 300,
+                        lineHeight: 1.6,
+                        color: 'var(--color-muted)',
+                      }}
+                    >
+                      {s.excerpt}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      {/* Provenance — the reader must be able to tell which kind of answer
-          this is without reading to the bottom of the page. */}
-      {result.groundedInLiterature === false && (
-        <div className="flex gap-3 px-4 py-3 rounded-xl"
-          style={{ background: 'rgba(122,74,74,0.06)', border: '1px solid rgba(122,74,74,0.22)' }}>
-          <BookOpen size={15} color="#7a4a4a" className="flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-xs font-semibold mb-1" style={{ color: '#5a3a3a' }}>
-              Not based on the medical library
-            </p>
-            <p className="text-xs font-light leading-relaxed" style={{ color: '#7a4a4a' }}>
-              Nothing in the indexed documents covered these symptoms, so this is
-              general information rather than something drawn from a specific source.
-              Treat it as a starting point for a conversation with a clinician.
-            </p>
-          </div>
-        </div>
-      )}
-      {/* Primary Diagnosis */}
-      {result.primaryDiagnosis.length > 0 && (
-        <div>
-          <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#7F1D1D' }}>
-            <Activity size={13} /> Primary Diagnosis
-          </h3>
-          <div className="flex flex-col gap-2">
-            {result.primaryDiagnosis.map((diagnosis, i) => (
-              <div key={i} className="px-4 py-3 rounded-xl text-sm font-medium"
-                style={{
-                  background: 'rgba(255,255,255,0.55)',
-                  border: '1px solid rgba(127,29,29,0.18)',
-                  borderLeft: '3px solid #7F1D1D',
-                  color: '#2a0a0a',
-                  borderRadius: '0 10px 10px 0',
-                }}>
-                {diagnosis}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Differential Diagnosis */}
-      {result.differentialDiagnosis.length > 0 && (
-        <div>
-          <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#7F1D1D' }}>
-            <FileText size={13} /> Differential Diagnosis
-          </h3>
-          <div className="flex flex-col gap-2">
-            {result.differentialDiagnosis.map((diagnosis, i) => (
-              <div key={i} className="flex items-start gap-3 text-sm" style={{ color: '#3a1a1a' }}>
-                <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0"
-                  style={{ background: 'rgba(127,29,29,0.35)' }} />
-                <span className="font-light leading-relaxed">{diagnosis}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recommended Tests */}
-      {result.recommendedTests.length > 0 && (
-        <div>
-          <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#7F1D1D' }}>
-            <FlaskConical size={13} /> Recommended Tests & Scans
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {result.recommendedTests.map((test, i) => (
-              <div key={i} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm"
-                style={{
-                  background: 'rgba(255,255,255,0.5)',
-                  border: '1px solid rgba(255,255,255,0.7)',
-                  color: '#2a0a0a',
-                }}>
-                <CheckCircle size={13} color="#7F1D1D" className="flex-shrink-0" />
-                <span className="font-light">{test}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Clinical Recommendations */}
-      {result.recommendations.length > 0 && (
-        <div>
-          <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#7F1D1D' }}>
-            <ClipboardList size={13} /> Clinical Recommendations
-          </h3>
-          <div className="flex flex-col gap-2">
-            {result.recommendations.map((rec, i) => (
-              <div key={i} className="flex items-start gap-3 text-sm" style={{ color: '#3a1a1a' }}>
-                <span className="font-medium mt-0.5 flex-shrink-0" style={{ color: '#7F1D1D' }}>→</span>
-                <span className="font-light leading-relaxed">{rec}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Additional Notes */}
-      {result.notes && (
-        <div className="px-4 py-4 rounded-xl"
-          style={{ background: 'rgba(127,29,29,0.04)', border: '1px solid rgba(127,29,29,0.1)' }}>
-          <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#7F1D1D' }}>
-            Additional Notes
-          </p>
-          <p className="text-sm font-light leading-relaxed" style={{ color: '#5a3a3a' }}>{result.notes}</p>
-        </div>
-      )}
-
-      {/* Sources */}
-      {result.sources && result.sources.length > 0 && (
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#9a6060' }}>
-            Medical Sources
-          </h3>
-          <div className="flex flex-col gap-1.5">
-            {result.sources.map((source, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs font-light" style={{ color: '#7a4a4a' }}>
-                <span className="mt-0.5 flex-shrink-0" style={{ color: '#9a6060' }}>[{i + 1}]</span>
-                <span className="leading-relaxed">{source}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Footer disclaimer */}
-      <div className="pt-4 flex items-start gap-2" style={{ borderTop: '1px solid rgba(127,29,29,0.08)' }}>
-        <AlertTriangle size={12} color="#9a6060" className="flex-shrink-0 mt-0.5" />
-        <p className="text-xs font-light italic leading-relaxed" style={{ color: '#9a6060' }}>
-          This is an AI-generated suggestion. Always use clinical judgment and validate with additional examination and testing.
+      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      <div style={{ padding: '16px 28px', borderTop: '1px solid var(--color-rule)', background: 'var(--color-bone)' }}>
+        <p className="meta" style={{ lineHeight: 1.6 }}>
+          Generated by a language model from retrieved documents. It may be
+          incomplete or wrong. Always consult a licensed clinician.
         </p>
       </div>
     </div>
