@@ -368,6 +368,11 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // START SERVER
 // ============================================
 
+
+app.get('/debug-sentry', () => {
+  throw new Error('Sentry test error');
+});
+
 Sentry.setupExpressErrorHandler(app);
 
 app.listen(PORT, () => {
