@@ -2,8 +2,25 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-import os
+import os 
 from dotenv import load_dotenv
+
+import sentry_sdk
+
+def scrub(event, hint):
+    if "request" in event:
+        event["request"].pop("data", None)
+        event["request"].pop("cookies", None)
+        event["request"].pop("headers", None)
+    return event
+
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN_PYTHON"),
+    environment=os.getenv("ENVIRONMENT", "production"),
+    traces_sample_rate=0.2,
+    send_default_pii=False,
+    before_send=scrub,
+)
 
 # Import our custom RAG components
 from rag_engine import RAGEngine

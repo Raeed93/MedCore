@@ -18,3 +18,4 @@ python-multipart
 PyPDF2
 python-docx
 requests
+sentry-sdk[fastapi]==2.20.0
