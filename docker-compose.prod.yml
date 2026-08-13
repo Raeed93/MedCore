@@ -13,6 +13,8 @@ services:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - pulse-network
+    ports:
+      - "127.0.0.1:5432:5432"
 
   # ── Node API ──────────────────────────────
   server:
@@ -25,6 +27,7 @@ services:
       - db
     networks:
       - pulse-network
+    
 
   # ── Python AI Service ─────────────────────
   ai-service:
@@ -39,7 +42,7 @@ services:
       - pulse-network
     mem_limit: 1500m
     memswap_limit: 3g
-
+    
   # ── React Client (built as static files) ──
   client:
     build:
@@ -73,3 +76,5 @@ networks:
 volumes:
   db_data:
   chroma_data:
+
+ 

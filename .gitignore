@@ -65,3 +65,4 @@ __pycache__/
 /.env.production
 chroma_export/
 chroma_export.tar.gz
+*.bak
