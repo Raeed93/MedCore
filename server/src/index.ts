@@ -373,7 +373,19 @@ app.get('/debug-sentry', () => {
   throw new Error('Sentry test error');
 });
 
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ message: 'Not found' });
+});
+
 Sentry.setupExpressErrorHandler(app);
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  if (err.message === 'Origin not allowed') {
+    return res.status(403).json({ message: 'Origin not allowed' });
+  }
+  console.error('❌ Unhandled error:', err);
+  res.status(500).json({ message: 'Server error', detail: detail(err) });
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
