@@ -344,25 +344,6 @@ app.get('/diagnosis-history', requireAuth, async (req: Request, res: Response) =
   }
 });
 
-// ============================================
-// ERROR HANDLING
-// ============================================
-
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({ message: 'Not found' });
-});
-
-// Four arguments marks this as Express's error handler — the `next` parameter
-// is required for that signature even though it is unused.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  if (err.message === 'Origin not allowed') {
-    return res.status(403).json({ message: 'Origin not allowed' });
-  }
-
-  console.error('❌ Unhandled error:', err);
-  res.status(500).json({ message: 'Server error', detail: detail(err) });
-});
 
 // ============================================
 // START SERVER
