@@ -350,9 +350,6 @@ app.get('/diagnosis-history', requireAuth, async (req: Request, res: Response) =
 // ============================================
 
 
-app.get('/debug-sentry', () => {
-  throw new Error('Sentry test error');
-});
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ message: 'Not found' });
